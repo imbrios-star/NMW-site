@@ -13,15 +13,16 @@ taxonomies:
 
 menu:
     main:
+        - name: Tools
+          url: tools/
+          weight: 3
         - name: Books
           url: books/
           weight: 4
         - name: Papers
           url: papers/
           weight: 2
-        - name: Tools
-          url: tools/
-          weight: 3
+
  
 
 params:
