@@ -56,12 +56,12 @@ params:
           imageWidth: 160
           imageHeight: 160
           buttons:
+            - name: Tools
+              url: tools/
             - name: Books
               url: books/
             - name: Papers
               url: papers/
-            - name: Tools
-              url: tools/
             - name: ASU Website
               url: https://search.asu.edu/profile/3712548
 
