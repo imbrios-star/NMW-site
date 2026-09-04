@@ -1,4 +1,4 @@
-baseURL: "https://imbrios-star.github.io/NMW-site/" 
+baseURL: "https://www.nicholasmorrowwilliams.com/" 
 title: Nicholas Morrow Williams
 theme: PaperMod
 
@@ -13,15 +13,16 @@ taxonomies:
 
 menu:
     main:
+        - name: Tools
+          url: tools/
+          weight: 3
         - name: Books
           url: books/
           weight: 4
         - name: Papers
           url: papers/
           weight: 2
-        - name: Tools
-          url: tools/
-          weight: 3
+
  
 
 params:
@@ -51,17 +52,17 @@ params:
     profileMode:
           enabled: true
           title: Nicholas Morrow Williams
-          subtitle: "I am a professor of Chinese at Arizona State University. I study classical Chinese poetry."
+          subtitle: "I am a professor of Chinese at Arizona State University. I read, translate, teach, and research classical Chinese poetry. This site is designed to share some information about my research and also some new tools for analyzing the prosody of classical Chinese poetry (with help from ChatGPT 5.5)."
           imageUrl: Alter ego.jpg
           imageWidth: 160
           imageHeight: 160
           buttons:
+            - name: Tools
+              url: tools/
             - name: Books
               url: books/
             - name: Papers
               url: papers/
-            - name: Tools
-              url: tools/
             - name: ASU Website
               url: https://search.asu.edu/profile/3712548
 
