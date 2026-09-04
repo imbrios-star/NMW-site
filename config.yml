@@ -1,0 +1,100 @@
+baseURL: "https://www.nicholasmorrowwilliams.com" 
+title: Nicholas Morrow Williams
+theme: PaperMod
+
+enableInlineShortcodes: true
+enableRobotsTXT: true
+buildFuture: true
+pagination:
+  pagerSize: 20
+
+taxonomies:
+    tag: tags
+
+menu:
+    main:
+        - name: Books
+          url: books/
+          weight: 4
+        - name: Papers
+          url: papers/
+          weight: 2
+        - name: Tools
+          url: tools/
+          weight: 3
+ 
+
+params:
+    description: "This website hosts information about Nicholas Morrow Williams's research on Chinese poetry."
+    author: Nick Williams
+    # googleAnalyticsID: G-XXXXX
+    DateFormat: "2006"
+    defaultTheme: light
+    hideFooter: false
+    disableThemeToggle: true
+    ShowShareButtons: false
+    ShowReadingTime: false
+    disableSpecial1stPost: true
+    disableAnchoredHeadings: true
+    ShowPostNavLinks: false
+    ShowBreadCrumbs: false
+    ShowCodeCopyButtons: true
+    ShowAllPagesInArchive: false
+    MainSections: [books, tools]
+    ShowToc: false
+    disableScrollToTop: true
+    TocOpen: true
+    ShowWordCount: false
+    UseHugoToc: true
+    comments: false
+    math: true
+    profileMode:
+          enabled: true
+          title: Nicholas Morrow Williams
+          subtitle: "I am a professor of Chinese at Arizona State University. I study classical Chinese poetry."
+          imageUrl: Alter ego.jpg
+          imageWidth: 160
+          imageHeight: 160
+          buttons:
+            - name: Books
+              url: books/
+            - name: Papers
+              url: papers/
+            - name: Tools
+              url: tools/
+            - name: ASU Website
+              url: https://search.asu.edu/profile/3712548
+
+    socialIcons:
+        - name: CV
+          url: cv.pdf
+        - name: Email
+          url: mailto:nmwill14@asu.edu
+        - name: Google Scholar
+          url: https://scholar.google.com/citations?user=vCsYwWMAAAAJ&hl=en
+        - name: Twitter
+          url: https://x.com/quasiphantasmal
+        - name: Bluesky
+          url: https://bsky.app/profile/quasiphantasmal.bsky.social
+
+    assets:
+        disableScrollBarStyle: true
+    cover:
+        hiddenInList: false
+        hiddenInSingle: true
+    label:
+      text: Nicholas Morrow Williams
+      icon: favicon.ico
+      iconHeight: 18
+
+markup:
+    goldmark:
+        renderer:
+            unsafe: true
+    highlight:
+        guessSyntax: true
+        style: autumn 
+    tableOfContents:
+        endLevel: 2
+        ordered: false
+        startLevel: 2
