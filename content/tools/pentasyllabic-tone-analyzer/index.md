@@ -4,7 +4,10 @@ date: 2026-09-04
 tags: ["Chinese poetry","pentasyllabic verse","tone"]
 author: ["Nicholas Morrow Williams"]
 description: "A specialized tool for analyzing tonal patterns in five-character Chinese verse."
-summary: "Analyze five-character verse with Zhang-style tonal statistics."
+summary: "Analyze the tonal prosody of five-character verse showing tonal contrasts in various line configurations."
+toolUrl: "/tools/middle-chinese-tone-toolkit/pentasyllabic-tone-analyzer.html"
+bestFor: "Focused analysis of five-character verse"
+weight: 30
 hideMeta: true
 showToc: false
 disableAnchoredHeadings: false
@@ -16,4 +19,6 @@ disableAnchoredHeadings: false
 
 #### Description
 
-This standalone app focuses on five-character verse and Zhang-style tonal statistics.
+This standalone app focuses on five-character verse and tonal statistics. The main analytical categories are inspired by the work of Zhang Hongming and his article, "On the Origin of Chinese Tonal Prosody: Argumentation from a Case Study of Shen Yue's Poems,"
+Journal of Chinese Literature and Culture (2015) 2 (2): 347–379.
+

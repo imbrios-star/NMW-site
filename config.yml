@@ -62,7 +62,7 @@ params:
               url: books/
             - name: Papers
               url: papers/
-            - name: ASU Website
+            - name: ASU
               url: https://search.asu.edu/profile/3712548
 
     socialIcons:
@@ -74,8 +74,6 @@ params:
           url: https://scholar.google.com/citations?user=vCsYwWMAAAAJ&hl=en
         - name: Twitter
           url: https://x.com/quasiphantasmal
-        - name: Bluesky
-          url: https://bsky.app/profile/quasiphantasmal.bsky.social
 
     assets:
         disableScrollBarStyle: true
