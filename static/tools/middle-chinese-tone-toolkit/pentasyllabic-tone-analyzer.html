@@ -226,7 +226,7 @@
       }
       .override-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
         gap: 10px;
       }
       .empty-note {
@@ -236,15 +236,40 @@
       }
       .override-item {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
         gap: 8px;
         border: 1px solid var(--line);
         border-radius: 8px;
         padding: 8px;
       }
+      .override-item select {
+        width: 100%;
+      }
       .override-char {
         font: 24px/1 "Noto Serif CJK TC", "Source Han Serif TC", "Songti TC", serif;
+      }
+      .override-label {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+      }
+      .override-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .override-line {
+        color: var(--muted);
+        font: 18px/1.45 "Noto Serif CJK TC", "Source Han Serif TC", "Songti TC", serif;
+        overflow-wrap: anywhere;
+      }
+      .override-line u {
+        color: var(--ink);
+        font-weight: 800;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 3px;
       }
       @media (max-width: 900px) {
         .app { grid-template-columns: 1fr; }
@@ -65413,7 +65438,7 @@ window.DEFAULT_VARIANT_NORMALIZATION = {
 
       function verseSegments(text) {
         return text
-          .split(/[\r\n。！？；;!?，,、]+/u)
+          .split(/[\r\n。！？；;!?，,、\/／]+/u)
           .map((part) => Array.from(part).filter(isHan).join(""))
           .filter(Boolean);
       }
@@ -65683,11 +65708,15 @@ window.DEFAULT_VARIANT_NORMALIZATION = {
         for (const occurrence of occurrences) {
           const item = document.createElement("div");
           item.className = "override-item";
-          const label = document.createElement("span");
+          const label = document.createElement("div");
+          label.className = "override-label";
+          const head = document.createElement("div");
+          head.className = "override-head";
           const charLabel = document.createElement("span");
           charLabel.className = "override-char";
           charLabel.textContent = occurrence.char;
-          label.append(charLabel, ` ${occurrence.label}`);
+          head.append(charLabel, ` ${occurrence.label}`);
+          label.append(head, lineContext(occurrence.lineChars, occurrence.charIndex));
           const select = document.createElement("select");
           select.setAttribute("aria-label", `Override tone for ${occurrence.label} ${occurrence.char}`);
           select.append(new Option(occurrence.status === "missing" ? "Leave unidentified" : "Leave ambiguous", ""));
@@ -65720,9 +65749,9 @@ window.DEFAULT_VARIANT_NORMALIZATION = {
           const lineNumber = index + 1;
           const han = Array.from(line).filter(isHan);
           for (const item of [
-            { position: "second", label: `Line ${lineNumber} second`, char: han[1] },
-            { position: "fourth", label: `Line ${lineNumber} fourth`, char: han[3] },
-            { position: "final", label: `Line ${lineNumber} final`, char: han[han.length - 1] },
+            { position: "second", label: `Line ${lineNumber} second`, char: han[1], index: 1 },
+            { position: "fourth", label: `Line ${lineNumber} fourth`, char: han[3], index: 3 },
+            { position: "final", label: `Line ${lineNumber} final`, char: han[han.length - 1], index: han.length - 1 },
           ]) {
             const char = item.char;
             if (!char) continue;
@@ -65736,12 +65765,25 @@ window.DEFAULT_VARIANT_NORMALIZATION = {
               key,
               char,
               label: item.label,
+              lineChars: han,
+              charIndex: item.index,
               status,
               choices: status === "missing" ? ["平", "上", "去", "入"] : [...tones],
             });
           }
         }
         return occurrences;
+      }
+
+      function lineContext(chars, targetIndex) {
+        const line = document.createElement("div");
+        line.className = "override-line";
+        chars.forEach((char, index) => {
+          const node = document.createElement(index === targetIndex ? "u" : "span");
+          node.textContent = char;
+          line.append(node);
+        });
+        return line;
       }
 
       function metric(values) {

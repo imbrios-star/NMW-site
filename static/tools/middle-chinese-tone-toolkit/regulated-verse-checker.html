@@ -65213,7 +65213,7 @@ window.DEFAULT_VARIANT_NORMALIZATION = {
       }
 
       function verseSegments(text) {
-        return text.split(/[\r\n。！？；;!?，,、]+/u).map((part) => Array.from(part).filter(isHan).join("")).filter(Boolean);
+        return text.split(/[\r\n。！？；;!?，,、\/／]+/u).map((part) => Array.from(part).filter(isHan).join("")).filter(Boolean);
       }
 
       function splitIntoVerseLines(text) {
