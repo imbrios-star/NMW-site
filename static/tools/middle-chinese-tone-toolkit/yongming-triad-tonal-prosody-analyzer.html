@@ -1,364 +1,250 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chinese Poem Tone Analyzer</title>
-    <style>
-      :root {
-        --ink: #1d242b;
-        --muted: #65707a;
-        --line: #d9e0e6;
-        --soft: #f4f7f9;
-        --accent: #15516a;
-        --accent-2: #1f6f8b;
-        --warn: #9a5b00;
-        --warn-bg: #fff4db;
-        --miss: #8a2f2f;
-        --miss-bg: #fae8e7;
-        --ok-bg: #e9f6f4;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        background: #fbfcfd;
-        color: var(--ink);
-        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      }
-      .app {
-        display: grid;
-        grid-template-columns: minmax(340px, 0.9fr) minmax(520px, 1.1fr);
-        min-height: 100vh;
-      }
-      .panel, .results { padding: 28px; }
-      .panel {
-        background: white;
-        border-right: 1px solid var(--line);
-      }
-      .masthead {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 16px;
-        margin-bottom: 24px;
-      }
-      .eyebrow {
-        margin: 0 0 4px;
-        color: var(--accent);
-        font-size: 13px;
-        font-weight: 800;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-      }
-      h1 {
-        margin: 0;
-        font-size: 32px;
-        line-height: 1.08;
-      }
-      label {
-        display: block;
-        margin: 14px 0 8px;
-        font-weight: 700;
-      }
-      textarea {
-        width: 100%;
-        min-height: 480px;
-        resize: vertical;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        padding: 14px;
-        color: var(--ink);
-        font: 20px/1.65 "Noto Serif CJK TC", "Source Han Serif TC", "Songti TC", serif;
-      }
-      button, select {
-        border: 1px solid var(--accent-2);
-        border-radius: 8px;
-        padding: 10px 14px;
-        font: inherit;
-        font-weight: 700;
-      }
-      button {
-        background: var(--accent-2);
-        color: white;
-        cursor: pointer;
-      }
-      select {
-        background: white;
-        color: var(--ink);
-      }
-      button.secondary {
-        background: white;
-        color: var(--accent);
-      }
-      button:disabled {
-        border-color: var(--line);
-        color: var(--muted);
-        cursor: not-allowed;
-        opacity: 0.75;
-      }
-      .controls {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 10px;
-        margin-top: 14px;
-      }
-      .control-group {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .control-group label {
-        margin: 0;
-        color: var(--muted);
-        font-size: 14px;
-      }
-      .checkbox-control {
-        align-items: center;
-        color: var(--muted);
-        display: flex;
-        font-size: 14px;
-        gap: 8px;
-        margin: 10px 0 0;
-      }
-      .checkbox-control input {
-        height: 16px;
-        width: 16px;
-      }
-      .hint {
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.45;
-      }
-      .metrics {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(180px, 1fr));
-        gap: 12px;
-        margin-bottom: 22px;
-      }
-      .metric {
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: white;
-        padding: 14px;
-      }
-      .metric b {
-        display: block;
-        font-size: 26px;
-        line-height: 1.1;
-      }
-      .metric span {
-        display: block;
-        margin-top: 6px;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.35;
-      }
-      .summary {
-        margin-bottom: 16px;
-        color: var(--muted);
-        font-weight: 700;
-      }
-      .table-wrap {
-        overflow: auto;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: white;
-        max-height: 58vh;
-      }
-      table {
-        width: 100%;
-        min-width: 920px;
-        border-collapse: collapse;
-      }
-      th, td {
-        border-bottom: 1px solid var(--line);
-        padding: 9px 10px;
-        text-align: left;
-        vertical-align: top;
-      }
-      th {
-        position: sticky;
-        top: 0;
-        background: var(--soft);
-        color: #34404b;
-        font-size: 13px;
-        z-index: 1;
-      }
-      .line {
-        max-width: 340px;
-        font-family: "Noto Serif CJK TC", "Source Han Serif TC", "Songti TC", serif;
-      }
-      .ok { color: var(--accent); font-weight: 700; }
-      .warn { color: var(--warn); font-weight: 700; }
-      .miss { color: var(--miss); font-weight: 700; }
-      .badge {
-        display: inline-block;
-        border-radius: 999px;
-        padding: 2px 8px;
-        background: var(--ok-bg);
-        font-weight: 800;
-      }
-      .badge.warn { background: var(--warn-bg); }
-      .badge.miss { background: var(--miss-bg); }
-      .csv-panel {
-        display: none;
-        margin-top: 16px;
-      }
-      .csv-panel.active {
-        display: block;
-      }
-      .csv-panel textarea {
-        min-height: 180px;
-        font: 13px/1.45 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-        white-space: pre;
-      }
-      .override-panel {
-        margin: 0 0 16px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: white;
-        padding: 14px;
-      }
-      .override-panel h2 {
-        margin: 0 0 10px;
-        font-size: 18px;
-      }
-      .override-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-        gap: 10px;
-      }
-      .empty-note {
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.45;
-      }
-      .override-item {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: flex-start;
-        gap: 8px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        padding: 8px;
-      }
-      .override-item select {
-        width: 100%;
-      }
-      .override-char {
-        font: 24px/1 "Noto Serif CJK TC", "Source Han Serif TC", "Songti TC", serif;
-      }
-      .override-label {
-        display: grid;
-        gap: 4px;
-        min-width: 0;
-      }
-      .override-head {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .override-line {
-        color: var(--muted);
-        font: 18px/1.45 "Noto Serif CJK TC", "Source Han Serif TC", "Songti TC", serif;
-        overflow-wrap: anywhere;
-      }
-      .override-line u {
-        color: var(--ink);
-        font-weight: 800;
-        text-decoration-thickness: 2px;
-        text-underline-offset: 3px;
-      }
-      @media (max-width: 900px) {
-        .app { grid-template-columns: 1fr; }
-        .panel { border-right: 0; border-bottom: 1px solid var(--line); }
-        .panel, .results { padding: 22px; }
-        textarea { min-height: 300px; }
-        .metrics { grid-template-columns: 1fr; }
-      }
-    </style>
-  </head>
-  <body>
-    <main class="app">
-      <section class="panel">
-        <header class="masthead">
-          <div>
-            <p class="eyebrow">Chinese Poems</p>
-            <h1>Pentasyllabic tone analyzer</h1>
-          </div>
-          <button id="sampleButton" class="secondary" type="button">Load sample</button>
-        </header>
-        <label for="poemText">Poem Text</label>
-        <textarea id="poemText" spellcheck="false" placeholder="Paste five-character verse here. Punctuation and line breaks both count as line breaks."></textarea>
-        <div class="controls">
-          <button id="analyzeButton" type="button">Analyze pentasyllabic verse</button>
-          <button id="exportButton" class="secondary" type="button" disabled>Export for Excel</button>
-        </div>
-        <label class="checkbox-control">
-          <input id="nonRhymeOnly" type="checkbox">
-          Count couplet-final contrast only for non-rhyming / review couplets
-        </label>
-        <p class="hint">
-          This tool always treats lines as five-character verse. It tests 2nd vs 5th character when the final character is 仄, 2nd vs 4th character when the rhyme/final character is 平, and the line-wide 2nd vs 4th contrast in both tone and 平仄.
-        </p>
-        <div id="csvPanel" class="csv-panel">
-          <label for="csvOutput">Excel Paste Output</label>
-          <textarea id="csvOutput" readonly spellcheck="false"></textarea>
-          <div class="controls">
-            <button id="copyCsvButton" class="secondary" type="button">Copy for Excel</button>
-          </div>
-        </div>
-      </section>
-      <section class="results">
-        <div id="summary" class="summary">Paste poems and run the analyzer.</div>
-        <div class="metrics">
-          <div class="metric"><b id="metricDeflectedFinalTone">-</b><span>Deflected-final lines where 2nd and 5th characters contrast by tone</span></div>
-          <div class="metric"><b id="metricLevelRhymeTone">-</b><span>Level-rhyme lines where 2nd and 4th characters contrast by tone</span></div>
-          <div class="metric"><b id="metricSecondFourthTone">-</b><span>All lines where 2nd and 4th characters contrast by tone</span></div>
-          <div class="metric"><b id="metricSecondFourthPingze">-</b><span>All lines where 2nd and 4th characters contrast by 平仄</span></div>
-          <div class="metric"><b id="metricLevelCoupletTone">-</b><span>Couplets with level rhyme where final characters contrast by tone</span></div>
-          <div class="metric"><b id="metricDeflectedCoupletTone">-</b><span>Couplets with deflected rhyme where final characters contrast by tone</span></div>
-        </div>
-        <div id="overridePanel" class="override-panel">
-          <h2>Resolve Ambiguities</h2>
-          <p id="overrideNote" class="empty-note">Run an analysis to see ambiguous characters here.</p>
-          <div id="overrideGrid" class="override-grid"></div>
-          <div class="controls">
-            <button id="clearOverridesButton" class="secondary" type="button" disabled>Clear overrides</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Line</th>
-                <th>2nd Char</th>
-                <th>2nd Tone</th>
-                <th>4th Char</th>
-                <th>4th Tone</th>
-                <th>Final Char</th>
-                <th>Final Tone</th>
-                <th>Final Class</th>
-                <th>2nd vs 5th Tone</th>
-                <th>Level 2nd vs 4th Tone</th>
-                <th>All 2nd vs 4th Tone</th>
-                <th>All 2nd vs 4th 平仄</th>
-                <th>Couplet Rhyme Class</th>
-                <th>Final Tone Contrast</th>
-                <th>Rhyme Helper</th>
-                <th>Overrides</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="resultsBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-    <script>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yongming Triad Tonal Prosody Analyzer</title>
+  <style>
+    :root {
+      --bg: #f7f5ef;
+      --panel: #fffefa;
+      --ink: #24211c;
+      --muted: #6f675c;
+      --line: #d9d1c3;
+      --accent: #365f5f;
+      --accent-dark: #234546;
+      --good: #236545;
+      --bad: #9b332c;
+      --warn: #966d1f;
+      --soft-good: #e9f4ed;
+      --soft-bad: #f8e9e7;
+      --soft-warn: #fff4d8;
+      color-scheme: light;
+      font-family: ui-serif, "Noto Serif CJK TC", "Songti TC", "PMingLiU", serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 44px;
+    }
+    header {
+      margin-bottom: 20px;
+    }
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--accent);
+      font: 700 0.8rem/1.2 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.7rem, 3vw, 2.5rem);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+    .subtitle {
+      max-width: 820px;
+      margin: 0;
+      color: var(--muted);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 14px 0;
+    }
+    label {
+      display: block;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+      color: var(--ink);
+      font: 18px/1.65 ui-serif, "Noto Serif CJK TC", "Songti TC", "PMingLiU", serif;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+      align-items: center;
+    }
+    button {
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font: 700 14px/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #fff;
+      color: var(--accent-dark);
+    }
+    button:hover { filter: brightness(0.96); }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 10px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+    }
+    .metric strong {
+      display: block;
+      font: 800 1.45rem/1.1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .metric span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font: 13px/1.3 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .hint, .empty {
+      color: var(--muted);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+    }
+    .override-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .override-item {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .context-line {
+      font-size: 20px;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+    .context-line u {
+      text-decoration-thickness: 2px;
+      text-underline-offset: 4px;
+      text-decoration-color: var(--bad);
+    }
+    .override-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    select {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 9px;
+      background: #fff;
+      color: var(--ink);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 9px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: #eee8dc;
+      font: 700 13px/1.2 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #3e3930;
+    }
+    tbody tr:last-child td { border-bottom: 0; }
+    .line-cell { font-size: 18px; word-break: break-all; }
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font: 700 12px/1.4 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      white-space: nowrap;
+    }
+    .pass { color: var(--good); background: var(--soft-good); }
+    .fail { color: var(--bad); background: var(--soft-bad); }
+    .ambiguous { color: var(--warn); background: var(--soft-warn); }
+    .missing, .invalid { color: var(--bad); background: var(--soft-bad); }
+    .small {
+      color: var(--muted);
+      font: 13px/1.35 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    @media (max-width: 820px) {
+      main { width: min(100vw - 20px, 1180px); padding-top: 18px; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+      textarea { min-height: 180px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">Yongming Triad Test</p>
+      <h1>Yongming Triad Tonal Prosody Analyzer</h1>
+      <p class="subtitle">Tests one condition in five-character verse: positions 2, 4, and 5 pass if all three exact tones differ, or if exactly two are level tone and the remaining one is not.</p>
+    </header>
+
+    <section class="panel">
+      <label for="inputText">Poem Text</label>
+      <textarea id="inputText" spellcheck="false" placeholder="Paste five-character lines here. Punctuation, slashes, and line breaks are treated as line breaks."></textarea>
+      <div class="controls">
+        <button id="analyzeBtn">Analyze</button>
+        <button class="secondary" id="sampleBtn">Load Sample</button>
+        <button class="secondary" id="copyBtn">Copy TSV</button>
+        <button class="secondary" id="exportBtn">Export TSV</button>
+        <button class="secondary" id="clearOverridesBtn">Clear Overrides</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="metrics" id="metrics"></div>
+    </section>
+
+    <section class="panel">
+      <label>Ambiguity and Missing-Character Overrides</label>
+      <p class="hint">Overrides apply only to this pasted text and only to the specific line and position shown.</p>
+      <div id="overrideList" class="override-list"></div>
+    </section>
+
+    <section class="panel">
+      <label>Line Results</label>
+      <div id="results"></div>
+    </section>
+  </main>
+
+  <script>
 window.DEFAULT_TONE_DATA = [
   {
     "char": "㐱",
@@ -754,8 +640,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "不",
-    "tone": "平/上",
-    "source": "edited tone table",
+    "tone": "平/上/入",
+    "source": "manual user correction",
     "reading": "pjuw (A)",
     "rhymeGroup": "下平聲十一尤; 入聲五物"
   },
@@ -817,8 +703,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "並",
-    "tone": "上",
-    "source": "edited tone table",
+    "tone": "平/去",
+    "source": "manual user correction",
     "reading": "bengX (B)",
     "rhymeGroup": "下平聲八庚; 去聲二十四敬"
   },
@@ -1104,15 +990,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "亟",
-    "tone": "去",
-    "source": "undecided source tone",
-    "reading": "kik (D); khiH (C)",
-    "rhymeGroup": "入聲十三職"
-  },
-  {
-    "char": "亟",
     "tone": "入",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "kik (D); khiH (C)",
     "rhymeGroup": "入聲十三職"
   },
@@ -1762,8 +1641,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "俔",
-    "tone": "上",
-    "source": "edited tone table",
+    "tone": "上/去",
+    "source": "manual user correction",
     "reading": "henX (B)",
     "rhymeGroup": "去聲十七霰"
   },
@@ -1784,14 +1663,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "俜",
     "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "pheng [p̙ʰeŋ] (平); phjiengH [pʰjaŋh] (去)",
-    "rhymeGroup": "下平聲九青"
-  },
-  {
-    "char": "俜",
-    "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "pheng [p̙ʰeŋ] (平); phjiengH [pʰjaŋh] (去)",
     "rhymeGroup": "下平聲九青"
   },
@@ -1895,8 +1767,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "倌",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "平",
+    "source": "manual user correction",
     "reading": "kwaenH (C)",
     "rhymeGroup": "上平聲十四寒"
   },
@@ -1979,8 +1851,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "倡",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "平/去",
+    "source": "manual user correction",
     "reading": "tsyhangH (C)",
     "rhymeGroup": "下平聲七陽"
   },
@@ -2161,8 +2033,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "備",
-    "tone": "上",
-    "source": "edited tone table",
+    "tone": "上/去",
+    "source": "manual user correction",
     "reading": "bijH (C)",
     "rhymeGroup": "去聲四寘"
   },
@@ -2287,8 +2159,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "僥",
-    "tone": "上",
-    "source": "edited tone table",
+    "tone": "平/上",
+    "source": "manual user correction",
     "reading": "kewX (B)",
     "rhymeGroup": "下平聲二蕭"
   },
@@ -2504,7 +2376,7 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "先",
-    "tone": "平",
+    "tone": "平/去",
     "source": "manual user correction",
     "reading": "sen (A); senH (C)",
     "rhymeGroup": "去聲十七霰"
@@ -2826,14 +2698,7 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "冷",
-    "tone": "平",
-    "source": "manual user correction",
-    "reading": "",
-    "rhymeGroup": "上聲二十三梗"
-  },
-  {
-    "char": "冷",
-    "tone": "上",
+    "tone": "平/上",
     "source": "manual user correction",
     "reading": "",
     "rhymeGroup": "上聲二十三梗"
@@ -3099,8 +2964,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "刺",
-    "tone": "入",
-    "source": "edited tone table",
+    "tone": "去/入",
+    "source": "manual user correction",
     "reading": "tshjeH (C); tshjek (D)",
     "rhymeGroup": "去聲四寘"
   },
@@ -3162,15 +3027,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "剔",
-    "tone": "去",
-    "source": "undecided source tone",
-    "reading": "thek (D); thejH (C)",
-    "rhymeGroup": "入聲十二錫"
-  },
-  {
-    "char": "剔",
     "tone": "入",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "thek (D); thejH (C)",
     "rhymeGroup": "入聲十二錫"
   },
@@ -3275,7 +3133,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "劃",
     "tone": "入",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "hweak (D)",
     "rhymeGroup": "下平聲六麻"
   },
@@ -4023,15 +3881,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "厭",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "'jiep (D); 'jiem (A)",
-    "rhymeGroup": "去聲二十九豔; 入聲十六葉"
-  },
-  {
-    "char": "厭",
-    "tone": "入",
-    "source": "undecided source tone",
+    "tone": "去/入",
+    "source": "manual user correction",
     "reading": "'jiep (D); 'jiem (A)",
     "rhymeGroup": "去聲二十九豔; 入聲十六葉"
   },
@@ -4212,15 +4063,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "只",
-    "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "tsye [tɕie] (平); tsyeX [tɕieʔ] (上)",
-    "rhymeGroup": "上聲四紙"
-  },
-  {
-    "char": "只",
     "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "tsye [tɕie] (平); tsyeX [tɕieʔ] (上)",
     "rhymeGroup": "上聲四紙"
   },
@@ -4583,15 +4427,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "咋",
-    "tone": "去",
-    "source": "Xun Gong character-readings.csv",
-    "reading": "dzraek [崇開二庚入] dʐaˤk; tsreak [莊開二耕入] tʂeˤk; tsraeH [莊開二麻去] tʂaˤh",
-    "rhymeGroup": "入聲十一陌"
-  },
-  {
-    "char": "咋",
-    "tone": "入",
-    "source": "Xun Gong character-readings.csv",
+    "tone": "去/入",
+    "source": "Xun Gong character-readings.csv; manual user correction",
     "reading": "dzraek [崇開二庚入] dʐaˤk; tsreak [莊開二耕入] tʂeˤk; tsraeH [莊開二麻去] tʂaˤh",
     "rhymeGroup": "入聲十一陌"
   },
@@ -4674,15 +4511,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "咽",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "'en (A); 'enH (C)",
-    "rhymeGroup": "下平聲一先; 入聲九屑"
-  },
-  {
-    "char": "咽",
-    "tone": "去",
-    "source": "undecided source tone",
+    "tone": "平/入",
+    "source": "manual user correction",
     "reading": "'en (A); 'enH (C)",
     "rhymeGroup": "下平聲一先; 入聲九屑"
   },
@@ -4765,15 +4595,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "哮",
-    "tone": "平",
-    "source": "Xun Gong character-readings.csv",
-    "reading": "xaewH [曉開二肴去] χaˤwh; xaew [曉開二肴平] χaˤw",
-    "rhymeGroup": "下平聲三肴"
-  },
-  {
-    "char": "哮",
-    "tone": "去",
-    "source": "Xun Gong character-readings.csv",
+    "tone": "平/去",
+    "source": "Xun Gong character-readings.csv; manual user correction",
     "reading": "xaewH [曉開二肴去] χaˤwh; xaew [曉開二肴平] χaˤw",
     "rhymeGroup": "下平聲三肴"
   },
@@ -4835,8 +4658,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "唯",
-    "tone": "平",
-    "source": "edited tone table",
+    "tone": "平/上",
+    "source": "manual user correction",
     "reading": "ywij (A)",
     "rhymeGroup": "上聲四紙"
   },
@@ -4850,14 +4673,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "唳",
     "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "lejH [l̙ejh] (去); let [l̙et] (入)",
-    "rhymeGroup": "去聲八霽"
-  },
-  {
-    "char": "唳",
-    "tone": "入",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "lejH [l̙ejh] (去); let [l̙et] (入)",
     "rhymeGroup": "去聲八霽"
   },
@@ -4912,15 +4728,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "啗",
-    "tone": "上",
-    "source": "undecided source tone",
-    "reading": "damX (B); damH (C)",
-    "rhymeGroup": "去聲二十八勘"
-  },
-  {
-    "char": "啗",
     "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "damX (B); damH (C)",
     "rhymeGroup": "去聲二十八勘"
   },
@@ -5053,7 +4862,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "喻",
     "tone": "去",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "yuH (C)",
     "rhymeGroup": "上平聲七虞"
   },
@@ -5172,7 +4981,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "嘔",
     "tone": "上",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "'uwX (B)",
     "rhymeGroup": "上平聲七虞; 下平聲十一尤"
   },
@@ -5304,15 +5113,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "嚇",
-    "tone": "去",
-    "source": "undecided source tone",
-    "reading": "xaek (D); xaeH (C)",
-    "rhymeGroup": "入聲十一陌"
-  },
-  {
-    "char": "嚇",
     "tone": "入",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "xaek (D); xaeH (C)",
     "rhymeGroup": "入聲十一陌"
   },
@@ -5325,8 +5127,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "嚮",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "上/去",
+    "source": "manual user correction",
     "reading": "xjangH (C)",
     "rhymeGroup": "上聲二十二養"
   },
@@ -5592,14 +5394,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "均",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "kjwin (A); hwinH (C)",
-    "rhymeGroup": "上平聲十一真"
-  },
-  {
-    "char": "均",
-    "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "kjwin (A); hwinH (C)",
     "rhymeGroup": "上平聲十一真"
   },
@@ -6032,8 +5827,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "墆",
-    "tone": "入",
-    "source": "edited tone table",
+    "tone": "去/入",
+    "source": "manual user correction",
     "reading": "det (D)",
     "rhymeGroup": "去聲八霽"
   },
@@ -6046,15 +5841,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "墊",
-    "tone": "去",
-    "source": "undecided source tone",
-    "reading": "temH (C); tep (D)",
-    "rhymeGroup": "去聲二十九豔"
-  },
-  {
-    "char": "墊",
-    "tone": "入",
-    "source": "undecided source tone",
+    "tone": "去/入",
+    "source": "manual user correction",
     "reading": "temH (C); tep (D)",
     "rhymeGroup": "去聲二十九豔"
   },
@@ -6145,14 +5933,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "壇",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "dzyenX (B); dan (A)",
-    "rhymeGroup": "上平聲十四寒"
-  },
-  {
-    "char": "壇",
-    "tone": "上",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "dzyenX (B); dan (A)",
     "rhymeGroup": "上平聲十四寒"
   },
@@ -6214,15 +5995,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "壞",
-    "tone": "上",
-    "source": "undecided source tone",
-    "reading": "hweajH (C); hwojX (B); kweajH (C)",
-    "rhymeGroup": "上平聲十灰; 去聲十卦"
-  },
-  {
-    "char": "壞",
-    "tone": "去",
-    "source": "undecided source tone",
+    "tone": "上/去",
+    "source": "manual user correction",
     "reading": "hweajH (C); hwojX (B); kweajH (C)",
     "rhymeGroup": "上平聲十灰; 去聲十卦"
   },
@@ -6579,14 +6353,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "奧",
     "tone": "去",
-    "source": "undecided source tone",
-    "reading": "'awH (C); 'juwk (D)",
-    "rhymeGroup": "去聲二十號"
-  },
-  {
-    "char": "奧",
-    "tone": "入",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "'awH (C); 'juwk (D)",
     "rhymeGroup": "去聲二十號"
   },
@@ -6697,15 +6464,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "妓",
-    "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "gjeX [ɡɨ̯ieʔ] (上); kje [kɨ̯ie] (平)",
-    "rhymeGroup": "上聲四紙"
-  },
-  {
-    "char": "妓",
     "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "gjeX [ɡɨ̯ieʔ] (上); kje [kɨ̯ie] (平)",
     "rhymeGroup": "上聲四紙"
   },
@@ -6733,14 +6493,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "妣",
     "tone": "上",
-    "source": "undecided source tone",
-    "reading": "pjijX (B); pjijH (C)",
-    "rhymeGroup": "上聲四紙"
-  },
-  {
-    "char": "妣",
-    "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "pjijX (B); pjijH (C)",
     "rhymeGroup": "上聲四紙"
   },
@@ -6796,7 +6549,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "姆",
     "tone": "上",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "muwX (B)",
     "rhymeGroup": "去聲二十六宥"
   },
@@ -7055,21 +6808,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "媕",
     "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "'jemX [ʔɨ̯emʔ] (上); 'om [ʔ̙əm] (平); 'op [ʔ̙əp] (入)",
-    "rhymeGroup": "下平聲十三覃"
-  },
-  {
-    "char": "媕",
-    "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "'jemX [ʔɨ̯emʔ] (上); 'om [ʔ̙əm] (平); 'op [ʔ̙əp] (入)",
-    "rhymeGroup": "下平聲十三覃"
-  },
-  {
-    "char": "媕",
-    "tone": "入",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "'jemX [ʔɨ̯emʔ] (上); 'om [ʔ̙əm] (平); 'op [ʔ̙əp] (入)",
     "rhymeGroup": "下平聲十三覃"
   },
@@ -7082,8 +6821,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "媛",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "平/去",
+    "source": "manual user correction",
     "reading": "hjwenH (C)",
     "rhymeGroup": "上平聲十三元"
   },
@@ -7930,21 +7669,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "尼",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "nejX (B); nejH (C); nrij (A)",
-    "rhymeGroup": "上平聲四支; 入聲四質"
-  },
-  {
-    "char": "尼",
-    "tone": "上",
-    "source": "undecided source tone",
-    "reading": "nejX (B); nejH (C); nrij (A)",
-    "rhymeGroup": "上平聲四支; 入聲四質"
-  },
-  {
-    "char": "尼",
-    "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "nejX (B); nejH (C); nrij (A)",
     "rhymeGroup": "上平聲四支; 入聲四質"
   },
@@ -8692,8 +8417,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "帥",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "去/入",
+    "source": "manual user correction",
     "reading": "srwijH (C)",
     "rhymeGroup": "入聲四質"
   },
@@ -8958,15 +8683,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "庇",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "pjij (A); pjijH (C)",
-    "rhymeGroup": "去聲四寘"
-  },
-  {
-    "char": "庇",
     "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "pjij (A); pjijH (C)",
     "rhymeGroup": "去聲四寘"
   },
@@ -9225,7 +8943,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "廷",
     "tone": "平",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "deng (A)",
     "rhymeGroup": "去聲二十五徑"
   },
@@ -9449,7 +9167,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "彊",
     "tone": "平",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "gjang (A)",
     "rhymeGroup": "上聲二十二養"
   },
@@ -9742,8 +9460,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "徬",
-    "tone": "平",
-    "source": "edited tone table",
+    "tone": "平/去",
+    "source": "manual user correction",
     "reading": "bang (A)",
     "rhymeGroup": "去聲二十三漾"
   },
@@ -9946,14 +9664,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "怕",
     "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "phaeH [p̙ʰaˤh] (去); phaek [p̙ʰaˤk] (入)",
-    "rhymeGroup": "去聲二十二禡"
-  },
-  {
-    "char": "怕",
-    "tone": "入",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "phaeH [p̙ʰaˤh] (去); phaek [p̙ʰaˤk] (入)",
     "rhymeGroup": "去聲二十二禡"
   },
@@ -10043,15 +9754,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "怫",
-    "tone": "去",
-    "source": "undecided source tone",
-    "reading": "bj+jH (C); bjut (D)",
-    "rhymeGroup": "入聲五物"
-  },
-  {
-    "char": "怫",
     "tone": "入",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "bj+jH (C); bjut (D)",
     "rhymeGroup": "入聲五物"
   },
@@ -10422,14 +10126,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "惹",
     "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "nyaeX [ɲaʔ] (上); nyak [ɲɑk] (入)",
-    "rhymeGroup": "上聲二十一馬"
-  },
-  {
-    "char": "惹",
-    "tone": "入",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "nyaeX [ɲaʔ] (上); nyak [ɲɑk] (入)",
     "rhymeGroup": "上聲二十一馬"
   },
@@ -10484,22 +10181,15 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "愒",
-    "tone": "入",
-    "source": "edited tone table",
+    "tone": "去",
+    "source": "manual user correction",
     "reading": "khjet (D)",
     "rhymeGroup": "去聲八霽; 去聲九泰"
   },
   {
     "char": "愓",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "dangX (B); syang (A)",
-    "rhymeGroup": "入聲十二錫"
-  },
-  {
-    "char": "愓",
     "tone": "上",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "dangX (B); syang (A)",
     "rhymeGroup": "入聲十二錫"
   },
@@ -10554,22 +10244,15 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "愬",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "去/入",
+    "source": "manual user correction",
     "reading": "suH (C)",
     "rhymeGroup": "入聲十一陌"
   },
   {
     "char": "愴",
-    "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "tsrhjangH [tʂʰɨ̯ɑŋh] (去); tsrhjangX [tʂʰɨ̯ɑŋʔ] (上)",
-    "rhymeGroup": "去聲二十三漾"
-  },
-  {
-    "char": "愴",
     "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "tsrhjangH [tʂʰɨ̯ɑŋh] (去); tsrhjangX [tʂʰɨ̯ɑŋʔ] (上)",
     "rhymeGroup": "去聲二十三漾"
   },
@@ -11723,22 +11406,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "掎",
-    "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "khjeH [kʰɨ̯ieh] (去); kje [kɨ̯ie] (平); kjeX [kɨ̯ieʔ] (上)",
-    "rhymeGroup": "上聲四紙; 去聲四寘"
-  },
-  {
-    "char": "掎",
     "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "khjeH [kʰɨ̯ieh] (去); kje [kɨ̯ie] (平); kjeX [kɨ̯ieʔ] (上)",
-    "rhymeGroup": "上聲四紙; 去聲四寘"
-  },
-  {
-    "char": "掎",
-    "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "khjeH [kʰɨ̯ieh] (去); kje [kɨ̯ie] (平); kjeX [kɨ̯ieʔ] (上)",
     "rhymeGroup": "上聲四紙; 去聲四寘"
   },
@@ -11989,15 +11658,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "搏",
-    "tone": "去",
-    "source": "undecided source tone",
-    "reading": "pak (D); pjuH (C)",
-    "rhymeGroup": "入聲十藥"
-  },
-  {
-    "char": "搏",
     "tone": "入",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "pak (D); pjuH (C)",
     "rhymeGroup": "入聲十藥"
   },
@@ -12178,8 +11840,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "撅",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "去/入",
+    "source": "manual user correction",
     "reading": "kjwejH (C)",
     "rhymeGroup": "入聲六月"
   },
@@ -12311,15 +11973,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "操",
-    "tone": "上",
-    "source": "undecided source tone",
-    "reading": "tshawX (B); tshawH (C)",
-    "rhymeGroup": "下平聲四豪; 去聲二十號"
-  },
-  {
-    "char": "操",
-    "tone": "去",
-    "source": "undecided source tone",
+    "tone": "平",
+    "source": "User correction; Pingshui main list",
     "reading": "tshawX (B); tshawH (C)",
     "rhymeGroup": "下平聲四豪; 去聲二十號"
   },
@@ -12501,7 +12156,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "攢",
     "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "dzwanH [d̙z̙wɑnh] (去); tsanH [t̙s̙ɑnh] (去)",
     "rhymeGroup": "上平聲十四寒"
   },
@@ -13298,8 +12953,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "晅",
-    "tone": "上",
-    "source": "edited tone table",
+    "tone": "平",
+    "source": "manual user correction",
     "reading": "xjwonX (B)",
     "rhymeGroup": "上平聲十三元"
   },
@@ -13340,15 +12995,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "晢",
-    "tone": "去",
-    "source": "undecided source tone",
-    "reading": "tsyejH (C); tsyet (D)",
-    "rhymeGroup": "去聲八霽"
-  },
-  {
-    "char": "晢",
     "tone": "入",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "tsyejH (C); tsyet (D)",
     "rhymeGroup": "去聲八霽"
   },
@@ -13424,15 +13072,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "晻",
-    "tone": "上",
-    "source": "undecided source tone",
-    "reading": "'omX (B); 'omH (C)",
-    "rhymeGroup": "上聲二十七感"
-  },
-  {
-    "char": "晻",
-    "tone": "去",
-    "source": "undecided source tone",
+    "tone": "上/去",
+    "source": "manual user correction",
     "reading": "'omX (B); 'omH (C)",
     "rhymeGroup": "上聲二十七感"
   },
@@ -13550,8 +13191,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "曀",
-    "tone": "上",
-    "source": "User correction",
+    "tone": "去",
+    "source": "User correction; manual user correction",
     "reading": "",
     "rhymeGroup": "去聲八霽"
   },
@@ -13578,15 +13219,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "曏",
-    "tone": "上",
-    "source": "undecided source tone",
-    "reading": "syangX (B); syangH (C); xjangX (B); xjangH (C)",
-    "rhymeGroup": "去聲二十三漾"
-  },
-  {
-    "char": "曏",
     "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "syangX (B); syangH (C); xjangX (B); xjangH (C)",
     "rhymeGroup": "去聲二十三漾"
   },
@@ -14089,8 +13723,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "枋",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "平/去",
+    "source": "manual user correction",
     "reading": "pjaengH (C)",
     "rhymeGroup": "下平聲七陽"
   },
@@ -14202,14 +13836,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "柅",
     "tone": "上",
-    "source": "undecided source tone",
-    "reading": "nrijX (B); nrijH (C)",
-    "rhymeGroup": "上平聲四支"
-  },
-  {
-    "char": "柅",
-    "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "nrijX (B); nrijH (C)",
     "rhymeGroup": "上平聲四支"
   },
@@ -14306,8 +13933,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "柲",
-    "tone": "入",
-    "source": "edited tone table",
+    "tone": "去/入",
+    "source": "manual user correction",
     "reading": "pit (D)",
     "rhymeGroup": "去聲四寘"
   },
@@ -14328,7 +13955,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "柿",
     "tone": "上",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "dzrijX (B)",
     "rhymeGroup": "去聲十一隊"
   },
@@ -14734,7 +14361,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "椅",
     "tone": "上",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "'jeX (B)",
     "rhymeGroup": "上平聲四支"
   },
@@ -14818,7 +14445,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "楖",
     "tone": "入",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "tsrit (D)",
     "rhymeGroup": "上聲二十二養"
   },
@@ -15259,7 +14886,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "櫃",
     "tone": "去",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "gwijH (C)",
     "rhymeGroup": "上聲六語"
   },
@@ -15370,22 +14997,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "欸",
-    "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "'oj [ʔ̙əj] (平); 'ojX [ʔ̙əjʔ] (上); xeajH [χeˤjh] (去)",
-    "rhymeGroup": "上平聲十灰; 上聲十賄"
-  },
-  {
-    "char": "欸",
-    "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "'oj [ʔ̙əj] (平); 'ojX [ʔ̙əjʔ] (上); xeajH [χeˤjh] (去)",
-    "rhymeGroup": "上平聲十灰; 上聲十賄"
-  },
-  {
-    "char": "欸",
-    "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "tone": "平/上",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "'oj [ʔ̙əj] (平); 'ojX [ʔ̙əjʔ] (上); xeajH [χeˤjh] (去)",
     "rhymeGroup": "上平聲十灰; 上聲十賄"
   },
@@ -15433,8 +15046,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "歉",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "上",
+    "source": "manual user correction",
     "reading": "kheamH (C)",
     "rhymeGroup": "上聲二十八琰; 上聲二十九豏"
   },
@@ -15447,8 +15060,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "歎",
-    "tone": "平",
-    "source": "edited tone table",
+    "tone": "平/去",
+    "source": "manual user correction",
     "reading": "than (A)",
     "rhymeGroup": "上平聲十四寒; 去聲十五翰"
   },
@@ -15469,7 +15082,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "歛",
     "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "xam [χɑm] (平)",
     "rhymeGroup": "去聲二十九豔"
   },
@@ -15798,14 +15411,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "氐",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "tej (A); tejX (B)",
-    "rhymeGroup": "上平聲八齊"
-  },
-  {
-    "char": "氐",
-    "tone": "上",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "tej (A); tejX (B)",
     "rhymeGroup": "上平聲八齊"
   },
@@ -15993,8 +15599,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "汶",
-    "tone": "平",
-    "source": "edited tone table",
+    "tone": "平/去",
+    "source": "manual user correction",
     "reading": "mwon (A)",
     "rhymeGroup": "去聲十三問"
   },
@@ -16162,21 +15768,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "沽",
     "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "ku [qo] (平); kuH [qoh] (去); kuX [qoʔ] (上)",
-    "rhymeGroup": "上平聲七虞"
-  },
-  {
-    "char": "沽",
-    "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "ku [qo] (平); kuH [qoh] (去); kuX [qoʔ] (上)",
-    "rhymeGroup": "上平聲七虞"
-  },
-  {
-    "char": "沽",
-    "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "ku [qo] (平); kuH [qoh] (去); kuX [qoʔ] (上)",
     "rhymeGroup": "上平聲七虞"
   },
@@ -16385,8 +15977,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "洟",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "平",
+    "source": "manual user correction",
     "reading": "thejH (C)",
     "rhymeGroup": "上平聲四支"
   },
@@ -16553,7 +16145,7 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "浸",
-    "tone": "平",
+    "tone": "去",
     "source": "manual user correction",
     "reading": "tshim [tsʰim] (平); tsimH [tsimh] (去)",
     "rhymeGroup": "去聲二十七沁"
@@ -16680,7 +16272,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "淡",
     "tone": "上",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "damX (B)",
     "rhymeGroup": "去聲二十八勘"
   },
@@ -16750,14 +16342,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "淳",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "dzywin (A); tsywin (A); tsywinX (B)",
-    "rhymeGroup": "上平聲十一真"
-  },
-  {
-    "char": "淳",
-    "tone": "上",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "dzywin (A); tsywin (A); tsywinX (B)",
     "rhymeGroup": "上平聲十一真"
   },
@@ -16918,14 +16503,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "渾",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "hwon (A); hwonX (B)",
-    "rhymeGroup": "上平聲十三元"
-  },
-  {
-    "char": "渾",
-    "tone": "上",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "hwon (A); hwonX (B)",
     "rhymeGroup": "上平聲十三元"
   },
@@ -16967,14 +16545,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "湓",
     "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "bwon [b̙wən] (平); phjunH [pʰɨ̯unh] (去); phwonH [p̙ʰwənh] (去)",
-    "rhymeGroup": "上平聲十三元"
-  },
-  {
-    "char": "湓",
-    "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "bwon [b̙wən] (平); phjunH [pʰɨ̯unh] (去); phwonH [p̙ʰwənh] (去)",
     "rhymeGroup": "上平聲十三元"
   },
@@ -17092,8 +16663,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "溺",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "入",
+    "source": "manual user correction",
     "reading": "nek (D); newH (C)",
     "rhymeGroup": "入聲十二錫"
   },
@@ -17302,15 +16873,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "漲",
-    "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "trjang [ʈjɑŋ] (平); trjangH [ʈjɑŋh] (去)",
-    "rhymeGroup": "去聲二十三漾"
-  },
-  {
-    "char": "漲",
-    "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "tone": "上",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "trjang [ʈjɑŋ] (平); trjangH [ʈjɑŋh] (去)",
     "rhymeGroup": "去聲二十三漾"
   },
@@ -17408,14 +16972,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "潦",
     "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "lawH [l̙əwh] (去); lawX [l̙əwʔ] (上)",
-    "rhymeGroup": "上聲十九皓"
-  },
-  {
-    "char": "潦",
-    "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "lawH [l̙əwh] (去); lawX [l̙əwʔ] (上)",
     "rhymeGroup": "上聲十九皓"
   },
@@ -17645,15 +17202,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "濯",
-    "tone": "去",
-    "source": "undecided source tone",
-    "reading": "draewH (C); draewk (D)",
-    "rhymeGroup": "入聲三覺"
-  },
-  {
-    "char": "濯",
     "tone": "入",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "draewH (C); draewk (D)",
     "rhymeGroup": "入聲三覺"
   },
@@ -17772,14 +17322,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "灑",
     "tone": "上",
-    "source": "undecided source tone",
-    "reading": "sreaX (B); sreaH (C); srjeH (C); srjeX (B)",
-    "rhymeGroup": "上聲九蟹; 上聲二十一馬"
-  },
-  {
-    "char": "灑",
-    "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "sreaX (B); sreaH (C); srjeH (C); srjeX (B)",
     "rhymeGroup": "上聲九蟹; 上聲二十一馬"
   },
@@ -18093,8 +17636,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "煖",
-    "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "tone": "上",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "nwanX [n̙wɑnʔ] (上); xjwon [xwɨ̯ən] (平)",
     "rhymeGroup": "上聲十四旱"
   },
@@ -18332,14 +17875,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "燥",
     "tone": "上",
-    "source": "undecided source tone",
-    "reading": "sawH (C); sawX (B)",
-    "rhymeGroup": "上聲十九皓"
-  },
-  {
-    "char": "燥",
-    "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "sawH (C); sawX (B)",
     "rhymeGroup": "上聲十九皓"
   },
@@ -18408,15 +17944,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "爓",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "zim (A); yemH (C)",
-    "rhymeGroup": "去聲二十九豔"
-  },
-  {
-    "char": "爓",
     "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "zim (A); yemH (C)",
     "rhymeGroup": "去聲二十九豔"
   },
@@ -18815,7 +18344,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "猒",
     "tone": "去",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "'jiem (A); 'jiemH (C)",
     "rhymeGroup": "下平聲十四鹽"
   },
@@ -18990,7 +18519,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "率",
     "tone": "去",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "lwijH (C); lwit (D); srwijH (C); srwit (D)",
     "rhymeGroup": "入聲四質"
   },
@@ -19039,14 +18568,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "玷",
     "tone": "上",
-    "source": "undecided source tone",
-    "reading": "temX (B); temH (C)",
-    "rhymeGroup": "上聲二十八琰"
-  },
-  {
-    "char": "玷",
-    "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "temX (B); temH (C)",
     "rhymeGroup": "上聲二十八琰"
   },
@@ -19500,15 +19022,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "甯",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "neng (A); nengH (C)",
-    "rhymeGroup": "去聲二十五徑"
-  },
-  {
-    "char": "甯",
-    "tone": "去",
-    "source": "undecided source tone",
+    "tone": "平/去",
+    "source": "manual user correction",
     "reading": "neng (A); nengH (C)",
     "rhymeGroup": "去聲二十五徑"
   },
@@ -20403,15 +19918,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "眩",
-    "tone": "平",
-    "source": "Xun Gong character-readings.csv",
-    "reading": "hwenH [匣合四先去] ʁwenh; hwen [匣合四先平] ʁwen",
-    "rhymeGroup": "去聲十七霰"
-  },
-  {
-    "char": "眩",
     "tone": "去",
-    "source": "Xun Gong character-readings.csv",
+    "source": "Xun Gong character-readings.csv; manual user correction",
     "reading": "hwenH [匣合四先去] ʁwenh; hwen [匣合四先平] ʁwen",
     "rhymeGroup": "去聲十七霰"
   },
@@ -20977,15 +20485,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "祐",
-    "tone": "上",
-    "source": "undecided source tone",
-    "reading": "hjuwX (B); hjuwH (C)",
-    "rhymeGroup": "去聲二十六宥"
-  },
-  {
-    "char": "祐",
     "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "hjuwX (B); hjuwH (C)",
     "rhymeGroup": "去聲二十六宥"
   },
@@ -21188,7 +20689,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "禱",
     "tone": "上",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "tawX (B)",
     "rhymeGroup": "去聲二十號"
   },
@@ -21677,15 +21178,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "窅",
-    "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "'aew [ʔ̙aˤw] (平); 'ewX [ʔ̙ewʔ] (上)",
-    "rhymeGroup": "上聲十七篠"
-  },
-  {
-    "char": "窅",
     "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "'aew [ʔ̙aˤw] (平); 'ewX [ʔ̙ewʔ] (上)",
     "rhymeGroup": "上聲十七篠"
   },
@@ -21951,7 +21445,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "笲",
     "tone": "去",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "bjenH (C)",
     "rhymeGroup": "上平聲十三元"
   },
@@ -22797,8 +22291,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "累",
-    "tone": "上",
-    "source": "edited tone table",
+    "tone": "上/去",
+    "source": "manual user correction",
     "reading": "ljwe (A); ljweX (B)",
     "rhymeGroup": "去聲四寘"
   },
@@ -23015,14 +22509,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "綦",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "gi (A); giH (C)",
-    "rhymeGroup": "上平聲四支"
-  },
-  {
-    "char": "綦",
-    "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "gi (A); giH (C)",
     "rhymeGroup": "上平聲四支"
   },
@@ -23245,8 +22732,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "縝",
-    "tone": "平",
-    "source": "edited tone table",
+    "tone": "上",
+    "source": "manual user correction",
     "reading": "tsyin (A)",
     "rhymeGroup": "上聲十一軫"
   },
@@ -23273,15 +22760,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "縣",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "hwenH (C); hwen (A)",
-    "rhymeGroup": "下平聲一先"
-  },
-  {
-    "char": "縣",
-    "tone": "去",
-    "source": "undecided source tone",
+    "tone": "平/去",
+    "source": "manual user correction",
     "reading": "hwenH (C); hwen (A)",
     "rhymeGroup": "下平聲一先"
   },
@@ -23407,14 +22887,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "繣",
     "tone": "去",
-    "source": "undecided source tone",
-    "reading": "hweaH (C); xweak (D)",
-    "rhymeGroup": "去聲十卦"
-  },
-  {
-    "char": "繣",
-    "tone": "入",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "hweaH (C); xweak (D)",
     "rhymeGroup": "去聲十卦"
   },
@@ -23519,14 +22992,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "纔",
     "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "dzoj [d̙z̙əj] (平); dzojH [d̙z̙əjh] (去); sraem [ʂaˤm] (平)",
-    "rhymeGroup": "上平聲十灰"
-  },
-  {
-    "char": "纔",
-    "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "dzoj [d̙z̙əj] (平); dzojH [d̙z̙əjh] (去); sraem [ʂaˤm] (平)",
     "rhymeGroup": "上平聲十灰"
   },
@@ -23651,15 +23117,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "罧",
-    "tone": "上",
-    "source": "undecided source tone",
-    "reading": "srimH (C); simX (B)",
-    "rhymeGroup": "去聲二十七沁"
-  },
-  {
-    "char": "罧",
     "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "srimH (C); simX (B)",
     "rhymeGroup": "去聲二十七沁"
   },
@@ -23707,15 +23166,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "罷",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "beaX (B); bje (A)",
-    "rhymeGroup": "上聲九蟹; 去聲二十二禡"
-  },
-  {
-    "char": "罷",
-    "tone": "上",
-    "source": "undecided source tone",
+    "tone": "平/上",
+    "source": "manual user correction",
     "reading": "beaX (B); bje (A)",
     "rhymeGroup": "上聲九蟹; 去聲二十二禡"
   },
@@ -23812,7 +23264,7 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "羨",
-    "tone": "上",
+    "tone": "去",
     "source": "manual user correction",
     "reading": "zjenH (C); yen (A)",
     "rhymeGroup": "去聲十七霰"
@@ -24344,15 +23796,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "肖",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "sjew (A); sjewH (C)",
-    "rhymeGroup": "去聲十八嘯"
-  },
-  {
-    "char": "肖",
     "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "sjew (A); sjewH (C)",
     "rhymeGroup": "去聲十八嘯"
   },
@@ -24519,8 +23964,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "胠",
-    "tone": "入",
-    "source": "edited tone table",
+    "tone": "平",
+    "source": "manual user correction",
     "reading": "khjaep (D)",
     "rhymeGroup": "上平聲六魚; 去聲六御"
   },
@@ -24548,14 +23993,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "胥",
     "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "sjo [sjə] (平); sjoX [sjəʔ] (上)",
-    "rhymeGroup": "上平聲六魚"
-  },
-  {
-    "char": "胥",
-    "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "sjo [sjə] (平); sjoX [sjəʔ] (上)",
     "rhymeGroup": "上平聲六魚"
   },
@@ -24842,14 +24280,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "膠",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "kaew (A); kaewX (B)",
-    "rhymeGroup": "下平聲三肴; 去聲十九效"
-  },
-  {
-    "char": "膠",
-    "tone": "上",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "kaew (A); kaewX (B)",
     "rhymeGroup": "下平聲三肴; 去聲十九效"
   },
@@ -25310,8 +24741,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "芒",
-    "tone": "上",
-    "source": "edited tone table",
+    "tone": "平",
+    "source": "manual user correction",
     "reading": "xwangX (B); mang (A)",
     "rhymeGroup": "下平聲七陽"
   },
@@ -25681,8 +25112,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "茸",
-    "tone": "平/入",
-    "source": "User correction",
+    "tone": "平",
+    "source": "User correction; manual user correction",
     "reading": "",
     "rhymeGroup": "上平聲二冬; 上聲二腫"
   },
@@ -25863,7 +25294,7 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "莽",
-    "tone": "去",
+    "tone": "上",
     "source": "manual user correction",
     "reading": "",
     "rhymeGroup": "上聲七麌; 上聲二十二養"
@@ -25975,22 +25406,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "菲",
-    "tone": "平",
-    "source": "Xun Gong character-readings.csv",
-    "reading": "bj+jH [並三C微去] bwɨjh; phj+jX [滂三C微上] pʰwɨjʔ; phj+j [滂三C微平] pʰwɨj",
-    "rhymeGroup": "上平聲五微; 上聲五尾"
-  },
-  {
-    "char": "菲",
-    "tone": "上",
-    "source": "Xun Gong character-readings.csv",
-    "reading": "bj+jH [並三C微去] bwɨjh; phj+jX [滂三C微上] pʰwɨjʔ; phj+j [滂三C微平] pʰwɨj",
-    "rhymeGroup": "上平聲五微; 上聲五尾"
-  },
-  {
-    "char": "菲",
-    "tone": "去",
-    "source": "Xun Gong character-readings.csv",
+    "tone": "平/上",
+    "source": "Xun Gong character-readings.csv; manual user correction",
     "reading": "bj+jH [並三C微去] bwɨjh; phj+jX [滂三C微上] pʰwɨjʔ; phj+j [滂三C微平] pʰwɨj",
     "rhymeGroup": "上平聲五微; 上聲五尾"
   },
@@ -26206,8 +25623,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "蒡",
-    "tone": "平",
-    "source": "edited tone table",
+    "tone": "上",
+    "source": "manual user correction",
     "reading": "bang (A)",
     "rhymeGroup": "上聲二十二養"
   },
@@ -26591,15 +26008,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "薜",
-    "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "bejH [b̙ejh] (去); peak [p̙eˤk] (入)",
-    "rhymeGroup": "去聲八霽"
-  },
-  {
-    "char": "薜",
-    "tone": "入",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "tone": "去/入",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "bejH [b̙ejh] (去); peak [p̙eˤk] (入)",
     "rhymeGroup": "去聲八霽"
   },
@@ -27054,14 +26464,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "蛾",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "nga (A); ngjeX (B)",
-    "rhymeGroup": "下平聲五歌"
-  },
-  {
-    "char": "蛾",
-    "tone": "上",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "nga (A); ngjeX (B)",
     "rhymeGroup": "下平聲五歌"
   },
@@ -27403,8 +26806,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "蟣",
-    "tone": "平",
-    "source": "edited tone table",
+    "tone": "上",
+    "source": "manual user correction",
     "reading": "gj+j (A)",
     "rhymeGroup": "上聲五尾"
   },
@@ -27732,22 +27135,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "被",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "bjeX (B); bjeH (C); phje (A); phjeH (C)",
-    "rhymeGroup": "上聲四紙; 去聲四寘"
-  },
-  {
-    "char": "被",
-    "tone": "上",
-    "source": "undecided source tone",
-    "reading": "bjeX (B); bjeH (C); phje (A); phjeH (C)",
-    "rhymeGroup": "上聲四紙; 去聲四寘"
-  },
-  {
-    "char": "被",
-    "tone": "去",
-    "source": "undecided source tone",
+    "tone": "平/上",
+    "source": "manual user correction",
     "reading": "bjeX (B); bjeH (C); phje (A); phjeH (C)",
     "rhymeGroup": "上聲四紙; 去聲四寘"
   },
@@ -27795,7 +27184,7 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "裊",
-    "tone": "入",
+    "tone": "上",
     "source": "manual user correction",
     "reading": "",
     "rhymeGroup": "上聲十七篠"
@@ -28076,14 +27465,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "覃",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "dom (A); yemX (B)",
-    "rhymeGroup": "下平聲十三覃"
-  },
-  {
-    "char": "覃",
-    "tone": "上",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "dom (A); yemX (B)",
     "rhymeGroup": "下平聲十三覃"
   },
@@ -28132,7 +27514,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "視",
     "tone": "去",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "dzyijX (B); dzyijH (C)",
     "rhymeGroup": "上聲四紙"
   },
@@ -28306,8 +27688,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "訖",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "入",
+    "source": "manual user correction",
     "reading": "xj+jH (C)",
     "rhymeGroup": "入聲五物"
   },
@@ -28467,15 +27849,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "詒",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "dojX (B); yi (A)",
-    "rhymeGroup": "上聲十賄; 去聲四寘"
-  },
-  {
-    "char": "詒",
-    "tone": "上",
-    "source": "undecided source tone",
+    "tone": "平/上",
+    "source": "manual user correction",
     "reading": "dojX (B); yi (A)",
     "rhymeGroup": "上聲十賄; 去聲四寘"
   },
@@ -28769,14 +28144,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "誶",
     "tone": "去",
-    "source": "undecided source tone",
-    "reading": "dzwit (D); swijH (C)",
-    "rhymeGroup": "去聲四寘; 去聲十一隊"
-  },
-  {
-    "char": "誶",
-    "tone": "入",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "dzwit (D); swijH (C)",
     "rhymeGroup": "去聲四寘; 去聲十一隊"
   },
@@ -29293,8 +28661,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "讞",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "上",
+    "source": "manual user correction",
     "reading": "ngjenH (C); ngjet (D)",
     "rhymeGroup": "上聲十六銑; 入聲九屑"
   },
@@ -29420,14 +28788,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "豨",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "xj+j (A); xj+jX (B)",
-    "rhymeGroup": "上平聲五微"
-  },
-  {
-    "char": "豨",
-    "tone": "上",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "xj+j (A); xj+jX (B)",
     "rhymeGroup": "上平聲五微"
   },
@@ -29622,15 +28983,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "責",
-    "tone": "去",
-    "source": "undecided source tone",
-    "reading": "tsreak (D); tsreaH (C)",
-    "rhymeGroup": "入聲十一陌"
-  },
-  {
-    "char": "責",
     "tone": "入",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "tsreak (D); tsreaH (C)",
     "rhymeGroup": "入聲十一陌"
   },
@@ -30000,22 +29354,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "趁",
-    "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "drin [ɖin] (平); nrjenX [ɳjenʔ] (上); trhinH [ʈʰinh] (去)",
-    "rhymeGroup": "上聲十六銑; 去聲十二震"
-  },
-  {
-    "char": "趁",
-    "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "drin [ɖin] (平); nrjenX [ɳjenʔ] (上); trhinH [ʈʰinh] (去)",
-    "rhymeGroup": "上聲十六銑; 去聲十二震"
-  },
-  {
-    "char": "趁",
     "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "drin [ɖin] (平); nrjenX [ɳjenʔ] (上); trhinH [ʈʰinh] (去)",
     "rhymeGroup": "上聲十六銑; 去聲十二震"
   },
@@ -30105,22 +29445,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "跨",
-    "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "khuH [qʰoh] (去); khwae [qʰwaˤ] (平); khwaeH [qʰwaˤh] (去); khwaeX [qʰwaˤʔ] (上)",
-    "rhymeGroup": "去聲二十二禡"
-  },
-  {
-    "char": "跨",
-    "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "khuH [qʰoh] (去); khwae [qʰwaˤ] (平); khwaeH [qʰwaˤh] (去); khwaeX [qʰwaˤʔ] (上)",
-    "rhymeGroup": "去聲二十二禡"
-  },
-  {
-    "char": "跨",
     "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "khuH [qʰoh] (去); khwae [qʰwaˤ] (平); khwaeH [qʰwaˤh] (去); khwaeX [qʰwaˤʔ] (上)",
     "rhymeGroup": "去聲二十二禡"
   },
@@ -30903,15 +30229,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "辴",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "trhij (A); trhinX (B)",
-    "rhymeGroup": "上聲十一軫"
-  },
-  {
-    "char": "辴",
     "tone": "上",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "trhij (A); trhinX (B)",
     "rhymeGroup": "上聲十一軫"
   },
@@ -30987,14 +30306,7 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "迤",
-    "tone": "平",
-    "source": "manual user correction",
-    "reading": "",
-    "rhymeGroup": "上聲四紙"
-  },
-  {
-    "char": "迤",
-    "tone": "上",
+    "tone": "平/上",
     "source": "manual user correction",
     "reading": "",
     "rhymeGroup": "上聲四紙"
@@ -31688,7 +31000,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "邲",
     "tone": "入",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "bit (D); bjit (D)",
     "rhymeGroup": "去聲四寘"
   },
@@ -31751,7 +31063,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "郜",
     "tone": "入",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "kowk (D)",
     "rhymeGroup": "去聲二十號"
   },
@@ -31946,8 +31258,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "酎",
-    "tone": "上",
-    "source": "edited tone table",
+    "tone": "去",
+    "source": "manual user correction",
     "reading": "drjuwX (B)",
     "rhymeGroup": "去聲二十六宥"
   },
@@ -31960,8 +31272,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "酖",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "平/去",
+    "source": "manual user correction",
     "reading": "drimH (C)",
     "rhymeGroup": "下平聲十三覃"
   },
@@ -32219,8 +31531,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "鈇",
-    "tone": "上",
-    "source": "edited tone table",
+    "tone": "平",
+    "source": "manual user correction",
     "reading": "pjuX (B)",
     "rhymeGroup": "上平聲七虞"
   },
@@ -32373,15 +31685,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "鋙",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "ngjo (A); ngjoX (B)",
-    "rhymeGroup": "上平聲六魚"
-  },
-  {
-    "char": "鋙",
-    "tone": "上",
-    "source": "undecided source tone",
+    "tone": "平/上",
+    "source": "manual user correction",
     "reading": "ngjo (A); ngjoX (B)",
     "rhymeGroup": "上平聲六魚"
   },
@@ -32437,7 +31742,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "錘",
     "tone": "平",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "drjwe (A)",
     "rhymeGroup": "去聲四寘"
   },
@@ -32661,7 +31966,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "鐙",
     "tone": "平",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "tong (A)",
     "rhymeGroup": "去聲二十五徑"
   },
@@ -32906,7 +32211,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "闇",
     "tone": "去",
-    "source": "Xun Gong character-readings.csv",
+    "source": "Xun Gong character-readings.csv; manual user correction",
     "reading": "'omH [影開一覃去] ʔ̙əmh",
     "rhymeGroup": "下平聲十三覃; 上聲二十七感"
   },
@@ -33326,14 +32631,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "隘",
     "tone": "去",
-    "source": "undecided source tone",
-    "reading": "'eaH (C); 'eak (D)",
-    "rhymeGroup": "去聲十卦"
-  },
-  {
-    "char": "隘",
-    "tone": "入",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "'eaH (C); 'eak (D)",
     "rhymeGroup": "去聲十卦"
   },
@@ -33381,15 +32679,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "隩",
-    "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "'awH [ʔ̙əwh] (去); 'juwk [ʔɨ̯uk] (入)",
-    "rhymeGroup": "去聲二十號"
-  },
-  {
-    "char": "隩",
-    "tone": "入",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "tone": "去/入",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "'awH [ʔ̙əwh] (去); 'juwk [ʔɨ̯uk] (入)",
     "rhymeGroup": "去聲二十號"
   },
@@ -33718,14 +33009,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "霆",
     "tone": "平",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "deng [d̙eŋ] (平); dengX [d̙eŋʔ] (上)",
-    "rhymeGroup": "下平聲九青"
-  },
-  {
-    "char": "霆",
-    "tone": "上",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "deng [d̙eŋ] (平); dengX [d̙eŋʔ] (上)",
     "rhymeGroup": "下平聲九青"
   },
@@ -33844,15 +33128,8 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "靄",
     "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "'ajH [ʔ̙ɑjh] (去); 'at [ʔ̙ɑt] (入)",
-    "rhymeGroup": "去聲九泰"
-  },
-  {
-    "char": "靄",
-    "tone": "入",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "'ajH [ʔ̙ɑjh] (去); 'at [ʔ̙ɑt] (入)",
+    "source": "User correction",
+    "reading": "'ajH [ʔ̙ɑjh] (去)",
     "rhymeGroup": "去聲九泰"
   },
   {
@@ -34004,8 +33281,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "鞻",
-    "tone": "去",
-    "source": "edited tone table",
+    "tone": "平",
+    "source": "manual user correction",
     "reading": "kjuH (C)",
     "rhymeGroup": "下平聲十一尤"
   },
@@ -34250,7 +33527,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "頹",
     "tone": "平",
-    "source": "Xun Gong character-readings.csv",
+    "source": "Xun Gong character-readings.csv; manual user correction",
     "reading": "dwoj [定合一灰平] d̙wəj",
     "rhymeGroup": "入聲一屋"
   },
@@ -34690,22 +33967,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "饟",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "syang (A); syangX (B); syangH (C)",
-    "rhymeGroup": "上聲二十二養; 去聲二十三漾"
-  },
-  {
-    "char": "饟",
-    "tone": "上",
-    "source": "undecided source tone",
-    "reading": "syang (A); syangX (B); syangH (C)",
-    "rhymeGroup": "上聲二十二養; 去聲二十三漾"
-  },
-  {
-    "char": "饟",
     "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "syang (A); syangX (B); syangH (C)",
     "rhymeGroup": "上聲二十二養; 去聲二十三漾"
   },
@@ -34887,14 +34150,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "駽",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "xwen (A); xwenH (C)",
-    "rhymeGroup": "下平聲一先"
-  },
-  {
-    "char": "駽",
-    "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "xwen (A); xwenH (C)",
     "rhymeGroup": "下平聲一先"
   },
@@ -34992,14 +34248,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "騶",
     "tone": "平",
-    "source": "undecided source tone",
-    "reading": "dzrjuwH (C); tsrjuw (A)",
-    "rhymeGroup": "上平聲七虞; 下平聲十一尤"
-  },
-  {
-    "char": "騶",
-    "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "dzrjuwH (C); tsrjuw (A)",
     "rhymeGroup": "上平聲七虞; 下平聲十一尤"
   },
@@ -35048,7 +34297,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "驔",
     "tone": "上",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "demX (B)",
     "rhymeGroup": "下平聲十三覃"
   },
@@ -35258,7 +34507,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "鬥",
     "tone": "去",
-    "source": "edited tone table",
+    "source": "manual user correction",
     "reading": "tuwH (C)",
     "rhymeGroup": "上聲二十五有"
   },
@@ -35362,15 +34611,8 @@ window.DEFAULT_TONE_DATA = [
   },
   {
     "char": "魏",
-    "tone": "平",
-    "source": "undecided source tone",
-    "reading": "ngjw+j (A); ngjw+jH (C)",
-    "rhymeGroup": "去聲五未"
-  },
-  {
-    "char": "魏",
     "tone": "去",
-    "source": "undecided source tone",
+    "source": "manual user correction",
     "reading": "ngjw+j (A); ngjw+jH (C)",
     "rhymeGroup": "去聲五未"
   },
@@ -35895,14 +35137,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "麝",
     "tone": "去",
-    "source": "Xun Gong, Tang 300 gap fill",
-    "reading": "zyaeH [ʑah] (去); zyek [ʑak] (入)",
-    "rhymeGroup": "去聲二十二禡"
-  },
-  {
-    "char": "麝",
-    "tone": "入",
-    "source": "Xun Gong, Tang 300 gap fill",
+    "source": "Xun Gong, Tang 300 gap fill; manual user correction",
     "reading": "zyaeH [ʑah] (去); zyek [ʑak] (入)",
     "rhymeGroup": "去聲二十二禡"
   },
@@ -41376,14 +40611,7 @@ window.DEFAULT_TONE_DATA = [
   {
     "char": "溟",
     "tone": "平",
-    "source": "Pingshui main list, Lu Qinli gap fill",
-    "reading": "",
-    "rhymeGroup": "下平聲九青; 上聲二十四迥"
-  },
-  {
-    "char": "溟",
-    "tone": "上",
-    "source": "Pingshui main list, Lu Qinli gap fill",
+    "source": "User correction; Pingshui main list, Lu Qinli gap fill",
     "reading": "",
     "rhymeGroup": "下平聲九青; 上聲二十四迥"
   },
@@ -63422,6 +62650,20 @@ window.DEFAULT_TONE_DATA = [
     "source": "Pingshui main list expansion",
     "reading": "",
     "rhymeGroup": "入聲七曷; 入聲八黠"
+  },
+  {
+    "char": "侄",
+    "tone": "入",
+    "source": "manual user correction",
+    "reading": "",
+    "rhymeGroup": ""
+  },
+  {
+    "char": "沬",
+    "tone": "入",
+    "source": "manual user correction",
+    "reading": "",
+    "rhymeGroup": ""
   }
 ];
 window.DEFAULT_VARIANT_NORMALIZATION = {
@@ -65349,608 +64591,375 @@ window.DEFAULT_VARIANT_NORMALIZATION = {
   "龚": "龔",
   "龟": "龜"
 };
-</script>
-    <script>
-      const toneRows = window.DEFAULT_TONE_DATA || [];
-      const variantNormalization = window.DEFAULT_VARIANT_NORMALIZATION || {};
-      const toneIndex = buildToneIndex(toneRows);
-      const readingIndex = buildReadingIndex(toneRows);
-      const rhymeGroupIndex = buildRhymeGroupIndex(toneRows);
-      let currentRows = [];
-      let currentLines = [];
-      let currentLineGroups = [];
-      let currentLinePlan = null;
-      const toneOverrides = new Map();
+  </script>
+  <script>
+    const TONES = ["平", "上", "去", "入"];
+    const TONE_TO_CODE = { "平": "A", "上": "B", "去": "C", "入": "D" };
+    const STATUS_LABELS = {
+      pass: "Pass",
+      fail: "Fail",
+      ambiguous: "Ambiguous",
+      missing: "Missing",
+      invalid: "Invalid"
+    };
 
-      const poemText = document.querySelector("#poemText");
-      const analyzeButton = document.querySelector("#analyzeButton");
-      const sampleButton = document.querySelector("#sampleButton");
-      const exportButton = document.querySelector("#exportButton");
-      const copyCsvButton = document.querySelector("#copyCsvButton");
-      const clearOverridesButton = document.querySelector("#clearOverridesButton");
-      const nonRhymeOnly = document.querySelector("#nonRhymeOnly");
-      const csvPanel = document.querySelector("#csvPanel");
-      const csvOutput = document.querySelector("#csvOutput");
-      const overridePanel = document.querySelector("#overridePanel");
-      const overrideGrid = document.querySelector("#overrideGrid");
-      const overrideNote = document.querySelector("#overrideNote");
-      const summary = document.querySelector("#summary");
-      const resultsBody = document.querySelector("#resultsBody");
+    const toneIndex = new Map();
+    const variantMap = new Map(Object.entries(window.DEFAULT_VARIANT_NORMALIZATION || {}));
+    const overrides = new Map();
+    let currentRows = [];
 
-      analyzeButton.addEventListener("click", analyze);
-      exportButton.addEventListener("click", exportCsv);
-      copyCsvButton.addEventListener("click", copyCsv);
-      clearOverridesButton.addEventListener("click", clearOverrides);
-      nonRhymeOnly.addEventListener("change", () => currentRows.length && render(currentRows, currentLinePlan));
-      sampleButton.addEventListener("click", () => {
-        poemText.value = "白日依山盡\n黃河入海流\n欲窮千里目\n更上一層樓";
-        analyze();
-      });
+    for (const row of window.DEFAULT_TONE_DATA || []) {
+      if (!row.char || !row.tone || !TONES.includes(row.tone)) continue;
+      if (!toneIndex.has(row.char)) toneIndex.set(row.char, new Set());
+      toneIndex.get(row.char).add(row.tone);
+    }
 
-      function buildToneIndex(rows) {
-        const index = new Map();
-        for (const row of rows) {
-          if (!row.char || !row.tone) continue;
-          if (!index.has(row.char)) index.set(row.char, new Set());
-          index.get(row.char).add(row.tone);
-        }
-        return index;
-      }
+    const inputText = document.getElementById("inputText");
+    const metricsEl = document.getElementById("metrics");
+    const resultsEl = document.getElementById("results");
+    const overrideListEl = document.getElementById("overrideList");
 
-      function buildReadingIndex(rows) {
-        const index = new Map();
-        for (const row of rows) {
-          if (!row.char || !row.reading) continue;
-          if (!index.has(row.char)) index.set(row.char, new Set());
-          for (const key of rhymeKeysFromReading(row.reading)) index.get(row.char).add(key);
-        }
-        return index;
-      }
+    document.getElementById("analyzeBtn").addEventListener("click", analyze);
+    document.getElementById("sampleBtn").addEventListener("click", () => {
+      inputText.value = "池塘生春草。園柳變鳴禽。\n祁祁傷豳歌。萋萋感楚吟。";
+      analyze();
+    });
+    document.getElementById("copyBtn").addEventListener("click", copyTsv);
+    document.getElementById("exportBtn").addEventListener("click", exportTsv);
+    document.getElementById("clearOverridesBtn").addEventListener("click", () => {
+      overrides.clear();
+      analyze();
+    });
 
-      function buildRhymeGroupIndex(rows) {
-        const index = new Map();
-        for (const row of rows) {
-          if (!row.char || !row.rhymeGroup) continue;
-          if (!index.has(row.char)) index.set(row.char, new Set());
-          for (const group of String(row.rhymeGroup).split(";")) {
-            const clean = group.trim();
-            if (clean) index.get(row.char).add(clean);
-          }
-        }
-        return index;
-      }
+    function isHan(ch) {
+      return /[\p{Script=Han}]/u.test(ch);
+    }
 
-      function analyze() {
-        currentLinePlan = { length: 5, label: "Fixed five-character line mode" };
-        currentLines = splitIntoVerseLines(poemText.value, 5);
-        recalculate();
-        exportButton.disabled = currentRows.length === 0;
-        csvPanel.classList.remove("active");
-        csvOutput.value = "";
-      }
+    function splitLines(text) {
+      return text
+        .split(/[\r\n。！？；;!?，,、\/／]+/u)
+        .map((part) => Array.from(part).filter(isHan).join(""))
+        .filter(Boolean);
+    }
 
-      function recalculate() {
-        const rows = addCoupletStats(currentLines.map((line, index) => analyzeLine(line, index + 1)));
-        currentRows = rows;
-        render(rows, currentLinePlan);
-        renderOverrides(rows);
-      }
+    function normalizeChar(ch) {
+      return variantMap.get(ch) || ch;
+    }
 
-      function verseSegments(text) {
-        return text
-          .split(/[\r\n。！？；;!?，,、\/／]+/u)
-          .map((part) => Array.from(part).filter(isHan).join(""))
-          .filter(Boolean);
-      }
+    function overrideKey(lineNumber, position, char) {
+      return `${lineNumber}:${position}:${char}`;
+    }
 
-      function splitIntoVerseLines(text, lineLength) {
-        currentLineGroups = [];
-        const groups = text.split(/\n\s*\n+/u);
-        const lines = [];
-        for (const [groupIndex, group] of groups.entries()) {
-          const segments = verseSegments(group);
-          const source = segments.length ? segments : [Array.from(group).filter(isHan).join("")];
-          for (const segment of source) {
-            const line = Array.from(segment).filter(isHan).join("");
-            if (!line) continue;
-            lines.push(line);
-            currentLineGroups.push(groupIndex);
-          }
-        }
-        return lines;
-      }
-
-      function analyzeLine(line, number) {
-        const han = Array.from(line).filter(isHan);
-        const second = han[1] || "";
-        const fourth = han[3] || "";
-        const final = han[han.length - 1] || "";
-        const secondKey = occurrenceKey(number, "second", second);
-        const fourthKey = occurrenceKey(number, "fourth", fourth);
-        const finalKey = occurrenceKey(number, "final", final);
-        const secondInfo = lookup(second, secondKey);
-        const fourthInfo = lookup(fourth, fourthKey);
-        const finalInfo = lookup(final, finalKey);
-        const finalClass = classifyFinal(finalInfo.pingze);
-        const deflectedToneContrast = finalClass === "deflected" ? compareSets(secondInfo.tones, finalInfo.tones) : "not_applicable";
-        const levelToneContrast = finalClass === "level" ? compareSets(secondInfo.tones, fourthInfo.tones) : "not_applicable";
-        const secondFourthToneContrast = compareSets(secondInfo.tones, fourthInfo.tones);
-        const secondFourthPingzeContrast = compareSets(secondInfo.pingze, fourthInfo.pingze);
-
+    function lookupTone(lineNumber, position, char) {
+      const key = overrideKey(lineNumber, position, char);
+      if (overrides.has(key)) {
         return {
-          number,
+          char,
+          normalized: normalizeChar(char),
+          tones: new Set([overrides.get(key)]),
+          label: overrides.get(key),
+          overridden: true,
+          key
+        };
+      }
+      const normalized = normalizeChar(char);
+      const tones = new Set(toneIndex.get(char) || toneIndex.get(normalized) || []);
+      return {
+        char,
+        normalized,
+        tones,
+        label: labelToneSet(tones),
+        overridden: false,
+        key
+      };
+    }
+
+    function labelToneSet(set) {
+      if (!set || set.size === 0) return "—";
+      return [...set].sort((a, b) => TONES.indexOf(a) - TONES.indexOf(b)).join("/");
+    }
+
+    function labelToneCodes(set) {
+      if (!set || set.size === 0) return "";
+      return [...set].sort((a, b) => TONES.indexOf(a) - TONES.indexOf(b)).map((tone) => TONE_TO_CODE[tone]).join("/");
+    }
+
+    function yongmingTriadCondition(tones) {
+      if (new Set(tones).size === 3) return { ok: true, type: "distinct" };
+      const levelCount = tones.filter((tone) => tone === "平").length;
+      if (levelCount === 2 && tones.length - levelCount === 1) return { ok: true, type: "level-exception" };
+      return { ok: false, type: "fail" };
+    }
+
+    function evaluateToneSets(info) {
+      if (info.some((item) => item.tones.size === 0)) {
+        return { status: "missing", reason: "Missing tone data for at least one tested character." };
+      }
+
+      const outcomes = new Map();
+      for (const second of info[0].tones) {
+        for (const fourth of info[1].tones) {
+          for (const final of info[2].tones) {
+            const tones = [second, fourth, final];
+            const result = yongmingTriadCondition(tones);
+            const key = result.ok ? "pass" : "fail";
+            if (!outcomes.has(key)) outcomes.set(key, []);
+            outcomes.get(key).push(`${tones.map((tone) => TONE_TO_CODE[tone]).join("")}`);
+          }
+        }
+      }
+
+      if (outcomes.has("pass") && outcomes.has("fail")) {
+        const passExample = outcomes.get("pass")[0];
+        const failExample = outcomes.get("fail")[0];
+        return { status: "ambiguous", reason: `Depends on reading: ${passExample} passes, ${failExample} fails.` };
+      }
+      if (outcomes.has("pass")) {
+        return explainDefinitePass(info);
+      }
+      return { status: "fail", reason: "No possible reading meets the Yongming Triad condition." };
+    }
+
+    function explainDefinitePass(info) {
+      let sawDistinct = false;
+      let sawLevelException = false;
+      for (const second of info[0].tones) {
+        for (const fourth of info[1].tones) {
+          for (const final of info[2].tones) {
+            const result = yongmingTriadCondition([second, fourth, final]);
+            sawDistinct = sawDistinct || result.type === "distinct";
+            sawLevelException = sawLevelException || result.type === "level-exception";
+          }
+        }
+      }
+      if (sawDistinct && sawLevelException) {
+        return { status: "pass", reason: "All possible readings pass, by either distinct tones or the level-tone exception." };
+      }
+      if (sawLevelException) {
+        return { status: "pass", reason: "Two tested positions are level tone and the remaining one is not." };
+      }
+      return { status: "pass", reason: "The three tested positions have three different tones." };
+    }
+
+    function analyzeLine(line, index) {
+      const chars = Array.from(line).filter(isHan);
+      const lineNumber = index + 1;
+      if (chars.length !== 5) {
+        return {
+          lineNumber,
           line,
-          second,
-          secondTone: labelSet(secondInfo.tones),
-          fourth,
-          fourthTone: labelSet(fourthInfo.tones),
-          final,
-          finalTone: labelSet(finalInfo.tones),
-          finalClass,
-          deflectedToneContrast,
-          levelToneContrast,
-          secondFourthToneContrast,
-          secondFourthPingzeContrast,
-          coupletRhymeClass: "not_applicable",
-          coupletFinalToneContrast: "not_applicable",
-          coupletRhymeHelper: "not_applicable",
-          overrides: overrideLabel([
-            { key: secondKey, char: second },
-            { key: fourthKey, char: fourth },
-            { key: finalKey, char: final },
-          ]),
-          status: lineStatus({
-            secondInfo,
-            fourthInfo,
-            finalInfo,
-            finalClass,
-            deflectedToneContrast,
-            levelToneContrast,
-            secondFourthToneContrast,
-            secondFourthPingzeContrast
-          })
+          chars,
+          positions: [],
+          status: "invalid",
+          reason: `Expected 5 Chinese characters, found ${chars.length}.`
         };
       }
 
-      function addCoupletStats(rows) {
-        for (let index = 0; index < rows.length; index += 2) {
-          const first = rows[index];
-          const rhyme = rows[index + 1];
-          if (!rhyme || currentLineGroups[index] !== currentLineGroups[index + 1]) {
-            first.coupletRhymeClass = "unpaired";
-            first.coupletFinalToneContrast = "unpaired";
-            first.coupletRhymeHelper = "unpaired";
-            if (rhyme && currentLineGroups[index] !== currentLineGroups[index + 1]) index -= 1;
-            continue;
-          }
-          const firstFinal = lookup(first.final, occurrenceKey(first.number, "final", first.final));
-          const rhymeFinal = lookup(rhyme.final, occurrenceKey(rhyme.number, "final", rhyme.final));
-          const rhymeClass = classifyFinal(rhymeFinal.pingze);
-          const contrast = compareSets(firstFinal.tones, rhymeFinal.tones);
-          const rhymeHelper = likelyRhymeHelper(first, rhyme, firstFinal, rhymeFinal);
-          first.coupletRhymeClass = rhymeClass;
-          first.coupletFinalToneContrast = contrast;
-          first.coupletRhymeHelper = rhymeHelper;
-          rhyme.coupletRhymeClass = "rhyme_line";
-          rhyme.coupletFinalToneContrast = "rhyme_line";
-          rhyme.coupletRhymeHelper = "rhyme_line";
-          if (contrast !== "yes" && contrast !== "no") first.status = mergeStatus(first.status, contrast === "unknown" ? "missing" : "ambiguous");
-          if (rhymeClass === "unknown") first.status = mergeStatus(first.status, "missing");
-          if (rhymeClass === "ambiguous") first.status = mergeStatus(first.status, "ambiguous");
+      const positions = [
+        { position: 2, char: chars[1], ...lookupTone(lineNumber, 2, chars[1]) },
+        { position: 4, char: chars[3], ...lookupTone(lineNumber, 4, chars[3]) },
+        { position: 5, char: chars[4], ...lookupTone(lineNumber, 5, chars[4]) }
+      ];
+      const evaluation = evaluateToneSets(positions);
+      return {
+        lineNumber,
+        line,
+        chars,
+        positions,
+        status: evaluation.status,
+        reason: evaluation.reason
+      };
+    }
+
+    function analyze() {
+      const lines = splitLines(inputText.value);
+      currentRows = lines.map(analyzeLine);
+      renderMetrics();
+      renderOverrides();
+      renderResults();
+    }
+
+    function renderMetrics() {
+      const pass = currentRows.filter((row) => row.status === "pass").length;
+      const fail = currentRows.filter((row) => row.status === "fail").length;
+      const ambiguous = currentRows.filter((row) => row.status === "ambiguous").length;
+      const missing = currentRows.filter((row) => row.status === "missing").length;
+      const invalid = currentRows.filter((row) => row.status === "invalid").length;
+      const definite = pass + fail;
+      const rate = definite ? `${formatPercent(pass / definite)} (${pass}/${definite})` : "—";
+      const total = currentRows.length;
+      metricsEl.innerHTML = [
+        metric("Pass Rate", rate, "Definite pass / definite lines"),
+        metric("Pass", String(pass), "Lines meeting the condition"),
+        metric("Fail", String(fail), "Lines definitely failing"),
+        metric("Ambiguous", String(ambiguous), "Depends on reading"),
+        metric("Missing/Invalid", `${missing + invalid}`, `${missing} missing, ${invalid} invalid; ${total} total lines`)
+      ].join("");
+    }
+
+    function metric(title, value, note) {
+      return `<div class="metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(title)} · ${escapeHtml(note)}</span></div>`;
+    }
+
+    function formatPercent(value) {
+      return `${(value * 100).toFixed(1)}%`;
+    }
+
+    function renderOverrides() {
+      const items = [];
+      for (const row of currentRows) {
+        if (!row.positions || !row.positions.length) continue;
+        for (const item of row.positions) {
+          if (item.tones.size <= 1) continue;
+          items.push({ row, item, kind: "ambiguous" });
         }
-        return rows;
-      }
-
-      function lookup(char, key) {
-        if (!char) return { tones: new Set(), pingze: new Set(), rhymeKeys: new Set(), rhymeGroups: new Set(), status: "missing" };
-        if (key && toneOverrides.has(key)) {
-          const tones = new Set([toneOverrides.get(key)]);
-          return { tones, pingze: new Set([...tones].map(toPingze)), rhymeKeys: rhymeKeysFor(char), rhymeGroups: rhymeGroupsFor(char), status: "ok" };
-        }
-        const tones = tonesFor(char);
-        if (!tones.size) return { tones, pingze: new Set(), rhymeKeys: new Set(), rhymeGroups: new Set(), status: "missing" };
-        const pingze = new Set([...tones].map(toPingze));
-        const rhymeKeys = rhymeKeysFor(char);
-        const rhymeGroups = rhymeGroupsFor(char);
-        return { tones, pingze, rhymeKeys, rhymeGroups, status: tones.size > 1 ? "ambiguous" : "ok" };
-      }
-
-      function tonesFor(char) {
-        const direct = toneIndex.get(char);
-        if (direct?.size) return direct;
-        const normalized = variantNormalization[char];
-        if (!normalized || normalized === char) return new Set();
-        return toneIndex.get(normalized) || new Set();
-      }
-
-      function rhymeKeysFor(char) {
-        const direct = readingIndex.get(char);
-        if (direct?.size) return direct;
-        const normalized = variantNormalization[char];
-        if (!normalized || normalized === char) return new Set();
-        return readingIndex.get(normalized) || new Set();
-      }
-
-      function rhymeGroupsFor(char) {
-        const direct = rhymeGroupIndex.get(char);
-        if (direct?.size) return direct;
-        const normalized = variantNormalization[char];
-        if (!normalized || normalized === char) return new Set();
-        return rhymeGroupIndex.get(normalized) || new Set();
-      }
-
-      function occurrenceKey(lineNumber, position, char) {
-        return `${lineNumber}:${position}:${char}`;
-      }
-
-      function toPingze(tone) {
-        return tone === "平" ? "平" : "仄";
-      }
-
-      function compareSets(a, b) {
-        if (!a.size || !b.size) return "unknown";
-        if (a.size > 1 || b.size > 1) return "ambiguous";
-        return [...a][0] !== [...b][0] ? "yes" : "no";
-      }
-
-      function likelyRhymeHelper(first, rhyme, firstFinal, rhymeFinal) {
-        return compareRhymeEvidence(firstFinal.rhymeGroups, rhymeFinal.rhymeGroups)
-          || compareRhymeEvidence(firstFinal.rhymeKeys, rhymeFinal.rhymeKeys)
-          || "unknown";
-      }
-
-      function compareRhymeEvidence(firstEvidence, secondEvidence) {
-        if (!firstEvidence?.size || !secondEvidence?.size) return "";
-        for (const key of firstEvidence) {
-          if (secondEvidence.has(key)) return "likely";
-        }
-        return "review";
-      }
-
-      function rhymeKeysFromReading(reading) {
-        const keys = new Set();
-        for (const part of String(reading).split(";")) {
-          const raw = part.trim().split(/\s+/)[0];
-          if (!raw) continue;
-          const key = rhymeKey(raw);
-          if (key) keys.add(key);
-        }
-        return keys;
-      }
-
-      function rhymeKey(raw) {
-        const clean = raw.replace(/[XH]$/u, "").replace(/[^A-Za-z+'-]/g, "");
-        const match = clean.match(/[aeiou+].*$/i);
-        return match ? match[0].replace(/'/g, "").toLowerCase() : "";
-      }
-
-      function classifyFinal(pingze) {
-        if (!pingze.size) return "unknown";
-        if (pingze.size > 1) return "ambiguous";
-        return [...pingze][0] === "平" ? "level" : "deflected";
-      }
-
-      function lineStatus(info) {
-        if (info.finalClass === "unknown") return "missing";
-        if (info.finalClass === "ambiguous") return "ambiguous";
-        if (info.secondInfo.status === "missing" || info.fourthInfo.status === "missing" || info.finalInfo.status === "missing") return "missing";
-        if (info.secondInfo.status === "ambiguous" || info.fourthInfo.status === "ambiguous" || info.finalInfo.status === "ambiguous") return "ambiguous";
-        if (info.finalClass === "level") {
-          return combineStatus(info.levelToneContrast);
-        }
-        return combineStatus(info.deflectedToneContrast);
-      }
-
-      function render(rows, linePlan) {
-        const levelCoupletRows = rows.filter((row) => row.coupletRhymeClass === "level");
-        const deflectedCoupletRows = rows.filter((row) => row.coupletRhymeClass === "deflected");
-        const filteredLevelCoupletRows = nonRhymeOnly.checked ? levelCoupletRows.filter((row) => row.coupletRhymeHelper === "review") : levelCoupletRows;
-        const filteredDeflectedCoupletRows = nonRhymeOnly.checked ? deflectedCoupletRows.filter((row) => row.coupletRhymeHelper === "review") : deflectedCoupletRows;
-        const metrics = {
-          deflectedTone: metric(rows.map((row) => row.deflectedToneContrast)),
-          levelTone: metric(rows.map((row) => row.levelToneContrast)),
-          secondFourthTone: metric(rows.map((row) => row.secondFourthToneContrast)),
-          secondFourthPingze: metric(rows.map((row) => row.secondFourthPingzeContrast)),
-          levelCoupletTone: metric(filteredLevelCoupletRows.map((row) => row.coupletFinalToneContrast)),
-          deflectedCoupletTone: metric(filteredDeflectedCoupletRows.map((row) => row.coupletFinalToneContrast))
-        };
-        document.querySelector("#metricDeflectedFinalTone").textContent = metrics.deflectedTone.label;
-        document.querySelector("#metricLevelRhymeTone").textContent = metrics.levelTone.label;
-        document.querySelector("#metricSecondFourthTone").textContent = metrics.secondFourthTone.label;
-        document.querySelector("#metricSecondFourthPingze").textContent = metrics.secondFourthPingze.label;
-        document.querySelector("#metricLevelCoupletTone").textContent = metrics.levelCoupletTone.label;
-        document.querySelector("#metricDeflectedCoupletTone").textContent = metrics.deflectedCoupletTone.label;
-
-        const unknown = rows.filter((row) => row.status !== "ok").length;
-        const shortLines = rows.filter((row) => Array.from(row.line).filter(isHan).length !== 5).length;
-        summary.textContent = `${rows.length} five-character lines analyzed. ${unknown} lines have missing or ambiguous lookup data.${shortLines ? ` ${shortLines} line(s) are not exactly five characters after cleanup.` : ""} ${linePlan.label}.`;
-
-        resultsBody.replaceChildren();
-        for (const row of rows) {
-          const tr = document.createElement("tr");
-          tr.append(
-            cell(row.number),
-            cell(row.line, "line"),
-            cell(row.second),
-            cell(row.secondTone),
-            cell(row.fourth),
-            cell(row.fourthTone),
-            cell(row.final),
-            cell(row.finalTone),
-            cell(labelFinalClass(row.finalClass)),
-            badgeCell(row.deflectedToneContrast),
-            badgeCell(row.levelToneContrast),
-            badgeCell(row.secondFourthToneContrast),
-            badgeCell(row.secondFourthPingzeContrast),
-            cell(labelFinalClass(row.coupletRhymeClass)),
-            badgeCell(row.coupletFinalToneContrast),
-            cell(labelRhymeHelper(row.coupletRhymeHelper)),
-            cell(row.overrides),
-            statusCell(row.status)
-          );
-          resultsBody.append(tr);
+        for (const item of row.positions) {
+          if (item.tones.size !== 0) continue;
+          items.push({ row, item, kind: "missing" });
         }
       }
 
-      function renderOverrides(rows) {
-        const occurrences = unresolvedOccurrencesInCurrentLines();
-        overrideGrid.replaceChildren();
-        overridePanel.classList.add("active");
-        if (!occurrences.length) {
-          overrideNote.textContent = rows.length
-            ? "No ambiguous or unidentified characters found in the tested second-, fourth-, or final-character positions."
-            : "Run an analysis to see ambiguous or unidentified characters here.";
-          clearOverridesButton.disabled = true;
-          return;
-        }
-        overrideNote.textContent = "Choose a tone only where you want this specific line occurrence to use a temporary resolution. Leave the rest unresolved.";
-        clearOverridesButton.disabled = toneOverrides.size === 0;
-        for (const occurrence of occurrences) {
-          const item = document.createElement("div");
-          item.className = "override-item";
-          const label = document.createElement("div");
-          label.className = "override-label";
-          const head = document.createElement("div");
-          head.className = "override-head";
-          const charLabel = document.createElement("span");
-          charLabel.className = "override-char";
-          charLabel.textContent = occurrence.char;
-          head.append(charLabel, ` ${occurrence.label}`);
-          label.append(head, lineContext(occurrence.lineChars, occurrence.charIndex));
-          const select = document.createElement("select");
-          select.setAttribute("aria-label", `Override tone for ${occurrence.label} ${occurrence.char}`);
-          select.append(new Option(occurrence.status === "missing" ? "Leave unidentified" : "Leave ambiguous", ""));
-          for (const tone of occurrence.choices) {
-            select.append(new Option(tone, tone));
-          }
-          select.value = toneOverrides.get(occurrence.key) || "";
-          select.addEventListener("change", () => {
-            if (select.value) {
-              toneOverrides.set(occurrence.key, select.value);
-            } else {
-              toneOverrides.delete(occurrence.key);
-            }
-            recalculate();
-          });
-          item.append(label, select);
-          overrideGrid.append(item);
-        }
+      if (!items.length) {
+        overrideListEl.innerHTML = '<p class="empty">No ambiguous or missing tested positions in the current analysis.</p>';
+        return;
       }
 
-      function clearOverrides() {
-        toneOverrides.clear();
-        recalculate();
-      }
-
-      function unresolvedOccurrencesInCurrentLines() {
-        const occurrences = [];
-        const seen = new Set();
-        for (const [index, line] of currentLines.entries()) {
-          const lineNumber = index + 1;
-          const han = Array.from(line).filter(isHan);
-          for (const item of [
-            { position: "second", label: `Line ${lineNumber} second`, char: han[1], index: 1 },
-            { position: "fourth", label: `Line ${lineNumber} fourth`, char: han[3], index: 3 },
-            { position: "final", label: `Line ${lineNumber} final`, char: han[han.length - 1], index: han.length - 1 },
-          ]) {
-            const char = item.char;
-            if (!char) continue;
-            const tones = tonesFor(char);
-            const status = !tones || tones.size === 0 ? "missing" : tones.size > 1 ? "ambiguous" : "ok";
-            if (status === "ok") continue;
-            const key = occurrenceKey(lineNumber, item.position, char);
-            if (seen.has(key)) continue;
-            seen.add(key);
-            occurrences.push({
-              key,
-              char,
-              label: item.label,
-              lineChars: han,
-              charIndex: item.index,
-              status,
-              choices: status === "missing" ? ["平", "上", "去", "入"] : [...tones],
-            });
-          }
-        }
-        return occurrences;
-      }
-
-      function lineContext(chars, targetIndex) {
-        const line = document.createElement("div");
-        line.className = "override-line";
-        chars.forEach((char, index) => {
-          const node = document.createElement(index === targetIndex ? "u" : "span");
-          node.textContent = char;
-          line.append(node);
+      overrideListEl.innerHTML = items.map(({ row, item, kind }) => renderOverrideItem(row, item, kind)).join("");
+      overrideListEl.querySelectorAll("select[data-key]").forEach((select) => {
+        select.addEventListener("change", () => {
+          if (select.value) overrides.set(select.dataset.key, select.value);
+          else overrides.delete(select.dataset.key);
+          analyze();
         });
-        return line;
-      }
+      });
+    }
 
-      function metric(values) {
-        const valid = values.filter((value) => value === "yes" || value === "no");
-        const yes = valid.filter((value) => value === "yes").length;
-        return { yes, valid: valid.length, label: valid.length ? `${Math.round((yes / valid.length) * 1000) / 10}% (${yes}/${valid.length})` : "-" };
-      }
+    function renderOverrideItem(row, item, kind) {
+      const available = item.tones.size ? [...item.tones].sort((a, b) => TONES.indexOf(a) - TONES.indexOf(b)) : TONES;
+      const selected = overrides.get(item.key) || "";
+      const options = ['<option value="">No override</option>']
+        .concat(available.map((tone) => `<option value="${tone}" ${tone === selected ? "selected" : ""}>${tone} (${TONE_TO_CODE[tone]})</option>`))
+        .join("");
+      return `
+        <div class="override-item">
+          <div class="context-line">${underlineChar(row.chars, item.position - 1)}</div>
+          <div class="override-row">
+            <span><strong>Line ${row.lineNumber}, position ${item.position}</strong>: ${escapeHtml(item.char)}</span>
+            <span class="small">${kind === "missing" ? "missing from database" : `tones: ${escapeHtml(labelToneSet(item.tones))}`}</span>
+            <select data-key="${escapeHtml(item.key)}">${options}</select>
+          </div>
+        </div>
+      `;
+    }
 
-      function combineStatus(...parts) {
-        if (parts.includes("missing") || parts.includes("unknown")) return "missing";
-        if (parts.includes("ambiguous")) return "ambiguous";
-        return "ok";
-      }
+    function underlineChar(chars, index) {
+      return chars.map((char, i) => i === index ? `<u>${escapeHtml(char)}</u>` : escapeHtml(char)).join("");
+    }
 
-      function mergeStatus(a, b) {
-        if (a === "missing" || b === "missing") return "missing";
-        if (a === "warn" || b === "warn" || a === "ambiguous" || b === "ambiguous") return "ambiguous";
-        return "ok";
+    function renderResults() {
+      if (!currentRows.length) {
+        resultsEl.innerHTML = '<p class="empty">Paste a poem and click Analyze.</p>';
+        return;
       }
+      const body = currentRows.map(renderResultRow).join("");
+      resultsEl.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Line</th>
+              <th>2nd</th>
+              <th>4th</th>
+              <th>5th</th>
+              <th>Result</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>${body}</tbody>
+        </table>
+      `;
+    }
 
-      function labelSet(set) {
-        return set.size ? [...set].join("/") : "unknown";
-      }
+    function renderResultRow(row) {
+      const cells = row.positions && row.positions.length
+        ? row.positions.map((item) => toneCell(item))
+        : ["—", "—", "—"];
+      return `
+        <tr>
+          <td>${row.lineNumber}</td>
+          <td class="line-cell">${escapeHtml(row.line)}</td>
+          <td>${cells[0]}</td>
+          <td>${cells[1]}</td>
+          <td>${cells[2]}</td>
+          <td><span class="tag ${row.status}">${STATUS_LABELS[row.status]}</span></td>
+          <td>${escapeHtml(row.reason)}</td>
+        </tr>
+      `;
+    }
 
-      function overrideLabel(items) {
-        const labels = [];
-        for (const item of items) {
-          if (item.char && toneOverrides.has(item.key)) labels.push(`${item.char}=${toneOverrides.get(item.key)}`);
-        }
-        return labels.join("; ");
-      }
+    function toneCell(item) {
+      const normalized = item.normalized !== item.char ? ` → ${item.normalized}` : "";
+      const override = item.overridden ? " override" : "";
+      const codes = labelToneCodes(item.tones);
+      const codeText = codes ? ` (${codes})` : "";
+      return `<strong>${escapeHtml(item.char)}</strong><span class="small">${escapeHtml(normalized)} · ${escapeHtml(labelToneSet(item.tones))}${escapeHtml(codeText)}${escapeHtml(override)}</span>`;
+    }
 
-      function badgeCell(value) {
-        const td = document.createElement("td");
-        const span = document.createElement("span");
-        span.className = `badge ${value === "yes" || value === "no" ? "" : value === "unknown" ? "miss" : "warn"}`;
-        span.textContent = labelValue(value);
-        td.append(span);
-        return td;
-      }
+    function makeTsv() {
+      const headers = ["line_number", "line", "second_char", "second_tone", "second_code", "fourth_char", "fourth_tone", "fourth_code", "fifth_char", "fifth_tone", "fifth_code", "result", "reason"];
+      const rows = currentRows.map((row) => {
+        const p = row.positions || [];
+        return [
+          row.lineNumber,
+          row.line,
+          p[0]?.char || "",
+          labelToneSet(p[0]?.tones),
+          labelToneCodes(p[0]?.tones),
+          p[1]?.char || "",
+          labelToneSet(p[1]?.tones),
+          labelToneCodes(p[1]?.tones),
+          p[2]?.char || "",
+          labelToneSet(p[2]?.tones),
+          labelToneCodes(p[2]?.tones),
+          STATUS_LABELS[row.status],
+          row.reason
+        ].map(tsvCell).join("\t");
+      });
+      return [headers.join("\t")].concat(rows).join("\n");
+    }
 
-      function statusCell(status) {
-        const labels = { ok: "OK", ambiguous: "Ambiguous", missing: "Missing" };
-        const td = cell(labels[status] || status);
-        td.className = status === "ok" ? "ok" : status === "missing" ? "miss" : "warn";
-        return td;
-      }
+    function tsvCell(value) {
+      return String(value ?? "").replace(/\t/g, " ").replace(/\r?\n/g, " ");
+    }
 
-      function labelValue(value) {
-        return {
-          yes: "Different",
-          no: "Same",
-          unknown: "Unknown",
-          ambiguous: "Ambiguous",
-          unpaired: "Unpaired",
-          rhyme_line: "Rhyme line",
-          not_applicable: "-"
-        }[value] || value;
-      }
+    async function copyTsv() {
+      if (!currentRows.length) analyze();
+      await navigator.clipboard.writeText(makeTsv());
+    }
 
-      function labelFinalClass(value) {
-        return {
-          level: "Level final",
-          deflected: "Deflected final",
-          unknown: "Unknown",
-          ambiguous: "Ambiguous",
-          rhyme_line: "Rhyme line",
-          unpaired: "Unpaired",
-          not_applicable: "-"
-        }[value] || value;
-      }
+    function exportTsv() {
+      if (!currentRows.length) analyze();
+      const blob = new Blob(["\ufeff" + makeTsv()], { type: "text/tab-separated-values;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "yongming-triad-analysis.tsv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
 
-      function labelRhymeHelper(value) {
-        return {
-          likely: "Likely rhyme",
-          possible: "Possible rhyme",
-          review: "Review / non-rhyme candidate",
-          not_applicable: "-",
-          unpaired: "Unpaired",
-          rhyme_line: "Rhyme line"
-        }[value] || value || "-";
-      }
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
 
-      function cell(value, className) {
-        const td = document.createElement("td");
-        if (className) td.className = className;
-        td.textContent = value;
-        return td;
-      }
-
-      function isHan(char) {
-        return /\p{Script=Han}/u.test(char);
-      }
-
-      function exportCsv() {
-        if (!currentRows.length) return;
-        const tsv = buildTsv();
-        csvOutput.value = tsv;
-        csvPanel.classList.add("active");
-        const blob = new Blob([utf16LeWithBom(tsv)], { type: "text/tab-separated-values;charset=utf-16le" });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.download = "poem-tone-analysis.tsv";
-        link.style.display = "none";
-        document.body.append(link);
-        link.click();
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-          link.remove();
-        }, 0);
-      }
-
-      async function copyCsv() {
-        const tsv = csvOutput.value || buildTsv();
-        csvOutput.value = tsv;
-        csvPanel.classList.add("active");
-        try {
-          await navigator.clipboard.writeText(tsv);
-          copyCsvButton.textContent = "Copied";
-          setTimeout(() => {
-            copyCsvButton.textContent = "Copy for Excel";
-          }, 1200);
-        } catch (error) {
-          csvOutput.focus();
-          csvOutput.select();
-        }
-      }
-
-      function buildCsv() {
-        const header = ["line_number", "line", "second_char", "second_tone", "fourth_char", "fourth_tone", "final_char", "final_tone", "final_class", "deflected_2_vs_5_tone", "level_2_vs_4_tone", "all_2_vs_4_tone", "all_2_vs_4_pingze", "couplet_rhyme_class", "couplet_final_tone_contrast", "rhyme_helper", "overrides", "status"];
-        const lines = currentRows.map((row) => [
-          row.number, row.line, row.second, row.secondTone, row.fourth, row.fourthTone, row.final, row.finalTone, row.finalClass,
-          row.deflectedToneContrast, row.levelToneContrast, row.secondFourthToneContrast, row.secondFourthPingzeContrast, row.coupletRhymeClass, row.coupletFinalToneContrast, row.coupletRhymeHelper, row.overrides, row.status
-        ].map(csvCell).join(","));
-        return [header.join(","), ...lines].join("\n") + "\n";
-      }
-
-      function buildTsv() {
-        const header = ["line_number", "line", "second_char", "second_tone", "fourth_char", "fourth_tone", "final_char", "final_tone", "final_class", "deflected_2_vs_5_tone", "level_2_vs_4_tone", "all_2_vs_4_tone", "all_2_vs_4_pingze", "couplet_rhyme_class", "couplet_final_tone_contrast", "rhyme_helper", "overrides", "status"];
-        const lines = currentRows.map((row) => [
-          row.number, row.line, row.second, row.secondTone, row.fourth, row.fourthTone, row.final, row.finalTone, row.finalClass,
-          row.deflectedToneContrast, row.levelToneContrast, row.secondFourthToneContrast, row.secondFourthPingzeContrast, row.coupletRhymeClass, row.coupletFinalToneContrast, row.coupletRhymeHelper, row.overrides, row.status
-        ].map(tsvCell).join("\t"));
-        return [header.join("\t"), ...lines].join("\r\n") + "\r\n";
-      }
-
-      function csvCell(value) {
-        const text = String(value || "");
-        return /[",\n]/.test(text) ? `"${text.replace(/"/g, "\"\"")}"` : text;
-      }
-
-      function tsvCell(value) {
-        return String(value || "").replace(/[\t\r\n]+/g, " ");
-      }
-
-      function utf16LeWithBom(text) {
-        const bytes = new Uint8Array((text.length + 1) * 2);
-        bytes[0] = 0xff;
-        bytes[1] = 0xfe;
-        for (let index = 0; index < text.length; index += 1) {
-          const code = text.charCodeAt(index);
-          bytes[(index + 1) * 2] = code & 0xff;
-          bytes[(index + 1) * 2 + 1] = code >> 8;
-        }
-        return bytes;
-      }
-    </script>
-  </body>
+    analyze();
+  </script>
+</body>
 </html>
